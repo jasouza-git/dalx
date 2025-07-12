@@ -42,31 +42,34 @@
 import * as DOM from "./type.ts";
 import * as swc from "https://deno.land/x/swc@0.2.1/mod.ts";
 import * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
-import { contentType } from "https://deno.land/std@0.224.0/media_types/mod.ts";
 export { DOM };
 
 /* ----- TYPES ----- */
-/** Generic Object Representation has `{[key:string]:unknown}` */
-export type objstr = Record<string, unknown>;
-/** Type of a State including its own methods, its additional methods *(through arguments)*, and its built-in methods *(through client window)* */
-export type state_type<
-  T extends objstr = objstr,
-  A extends unknown[] = unknown[],
-> = T & State<T, A> & DOM.Window;
-/** Embedded function inside Dalx Element through states */
-export type embedded_function<
-  T extends objstr = objstr,
-  A extends unknown[] = unknown[],
-> = (
-  /** State Instance */
-  c: state_type<T>,
-  /** Function Arguments */
-  ...args: A
-) => unknown;
+/** Record of state by Dalx */
+export type state_record<
+  T extends objstr = objstr
+> = {
+  /* ----- Properties ----- */
+  /** State used for Identification */
+  id: State<T>;
+  /** Context of state */
+  ctx: T;
+  /** Processed functions inside state */ // @ts-ignore There can by any types of arugment types
+  funcs: state_function<T>[];
+  /** Server-sided sub-functions codes */
+  server: string[],
 
+  /* ----- For encoding ----- */
+  /** Has backend request so setup connection */
+  hasback: boolean;
+  /** anonymous functions */
+  annm_func: string[];
+};
+/** Embedded Function save state */
 export type state_function<
   T extends objstr = objstr,
-  A extends unknown[] = unknown[],
+  // @ts-ignore A function's arguments is not limited to the same type
+  A extends any[] = any[],
 > = {
   /** To be parsed function for identification *(We dont include inner functions cause they might have similar content but different context)* */
   id: embedded_function<T, A>;
@@ -77,17 +80,32 @@ export type state_function<
   /** Number of arguments excluding state argument */
   args: number;
 };
-export type state_record<
+/** Embedded function inside Dalx Element through states */
+export type embedded_function<
   T extends objstr = objstr,
   A extends unknown[] = unknown[],
-> = {
-  id: State<T>;
-  ctx: T;
-  funcs: state_function<T, A>[];
-  hasback: boolean;
-  /** anonymous functions */
-  annm_func: string[];
+> = (
+  /** State Instance */
+  c: state_type<T>,
+  /** Function Arguments */
+  ...args: A
+) => unknown;
+/** Type of a State including its own methods, its additional methods *(through arguments)*, and its built-in methods *(through client window)* */
+export type state_type<
+  T extends objstr = objstr
+> = T & State<T> & DOM.Window;
+/** Scope values */
+export type scope_value = {
+  /** Node of value *(Cloned)* */
+  node: swc_node;
+  /** Is backend dependent? undetermined *(null)* are ignored */
+  back: boolean;
+  /** Referenced Nodes */
+  refs: swc_node[];
 };
+/** Generic Object Representation has `{[key:string]:unknown}` */
+export type objstr = Record<string, unknown>;
+/** SWC Nodes */
 export type swc_node =
   | swct.Declaration
   | swct.Expression
@@ -97,6 +115,375 @@ export type swc_node =
   | swct.Super
   | swct.Import
   | swct.Statement;
+
+/* ----- DATA ----- */
+/** Mime and their extensions *(https://github.com/broofa/mime/blob/main/types/standard.ts)* */
+const mime: { [key: string]: string[] } = {
+  'application/andrew-inset': ['ez'],
+  'application/appinstaller': ['appinstaller'],
+  'application/applixware': ['aw'],
+  'application/appx': ['appx'],
+  'application/appxbundle': ['appxbundle'],
+  'application/atom+xml': ['atom'],
+  'application/atomcat+xml': ['atomcat'],
+  'application/atomdeleted+xml': ['atomdeleted'],
+  'application/atomsvc+xml': ['atomsvc'],
+  'application/atsc-dwd+xml': ['dwd'],
+  'application/atsc-held+xml': ['held'],
+  'application/atsc-rsat+xml': ['rsat'],
+  'application/automationml-aml+xml': ['aml'],
+  'application/automationml-amlx+zip': ['amlx'],
+  'application/bdoc': ['bdoc'],
+  'application/calendar+xml': ['xcs'],
+  'application/ccxml+xml': ['ccxml'],
+  'application/cdfx+xml': ['cdfx'],
+  'application/cdmi-capability': ['cdmia'],
+  'application/cdmi-container': ['cdmic'],
+  'application/cdmi-domain': ['cdmid'],
+  'application/cdmi-object': ['cdmio'],
+  'application/cdmi-queue': ['cdmiq'],
+  'application/cpl+xml': ['cpl'],
+  'application/cu-seeme': ['cu'],
+  'application/cwl': ['cwl'],
+  'application/dash+xml': ['mpd'],
+  'application/dash-patch+xml': ['mpp'],
+  'application/davmount+xml': ['davmount'],
+  'application/dicom': ['dcm'],
+  'application/docbook+xml': ['dbk'],
+  'application/dssc+der': ['dssc'],
+  'application/dssc+xml': ['xdssc'],
+  'application/ecmascript': ['ecma'],
+  'application/emma+xml': ['emma'],
+  'application/emotionml+xml': ['emotionml'],
+  'application/epub+zip': ['epub'],
+  'application/exi': ['exi'],
+  'application/express': ['exp'],
+  'application/fdf': ['fdf'],
+  'application/fdt+xml': ['fdt'],
+  'application/font-tdpfr': ['pfr'],
+  'application/geo+json': ['geojson'],
+  'application/gml+xml': ['gml'],
+  'application/gpx+xml': ['gpx'],
+  'application/gxf': ['gxf'],
+  'application/gzip': ['gz'],
+  'application/hjson': ['hjson'],
+  'application/hyperstudio': ['stk'],
+  'application/inkml+xml': ['ink', 'inkml'],
+  'application/ipfix': ['ipfix'],
+  'application/its+xml': ['its'],
+  'application/java-archive': ['jar', 'war', 'ear'],
+  'application/java-serialized-object': ['ser'],
+  'application/java-vm': ['class'],
+  'application/javascript': ['*js'],
+  'application/json': ['json', 'map'],
+  'application/json5': ['json5'],
+  'application/jsonml+json': ['jsonml'],
+  'application/ld+json': ['jsonld'],
+  'application/lgr+xml': ['lgr'],
+  'application/lost+xml': ['lostxml'],
+  'application/mac-binhex40': ['hqx'],
+  'application/mac-compactpro': ['cpt'],
+  'application/mads+xml': ['mads'],
+  'application/manifest+json': ['webmanifest'],
+  'application/marc': ['mrc'],
+  'application/marcxml+xml': ['mrcx'],
+  'application/mathematica': ['ma', 'nb', 'mb'],
+  'application/mathml+xml': ['mathml'],
+  'application/mbox': ['mbox'],
+  'application/media-policy-dataset+xml': ['mpf'],
+  'application/mediaservercontrol+xml': ['mscml'],
+  'application/metalink+xml': ['metalink'],
+  'application/metalink4+xml': ['meta4'],
+  'application/mets+xml': ['mets'],
+  'application/mmt-aei+xml': ['maei'],
+  'application/mmt-usd+xml': ['musd'],
+  'application/mods+xml': ['mods'],
+  'application/mp21': ['m21', 'mp21'],
+  'application/mp4': ['*mp4', '*mpg4', 'mp4s', 'm4p'],
+  'application/msix': ['msix'],
+  'application/msixbundle': ['msixbundle'],
+  'application/msword': ['doc', 'dot'],
+  'application/mxf': ['mxf'],
+  'application/n-quads': ['nq'],
+  'application/n-triples': ['nt'],
+  'application/node': ['cjs'],
+  'application/octet-stream': [
+    'bin',
+    'dms',
+    'lrf',
+    'mar',
+    'so',
+    'dist',
+    'distz',
+    'pkg',
+    'bpk',
+    'dump',
+    'elc',
+    'deploy',
+    'exe',
+    'dll',
+    'deb',
+    'dmg',
+    'iso',
+    'img',
+    'msi',
+    'msp',
+    'msm',
+    'buffer',
+  ],
+  'application/oda': ['oda'],
+  'application/oebps-package+xml': ['opf'],
+  'application/ogg': ['ogx'],
+  'application/omdoc+xml': ['omdoc'],
+  'application/onenote': [
+    'onetoc',
+    'onetoc2',
+    'onetmp',
+    'onepkg',
+    'one',
+    'onea',
+  ],
+  'application/oxps': ['oxps'],
+  'application/p2p-overlay+xml': ['relo'],
+  'application/patch-ops-error+xml': ['xer'],
+  'application/pdf': ['pdf'],
+  'application/pgp-encrypted': ['pgp'],
+  'application/pgp-keys': ['asc'],
+  'application/pgp-signature': ['sig', '*asc'],
+  'application/pics-rules': ['prf'],
+  'application/pkcs10': ['p10'],
+  'application/pkcs7-mime': ['p7m', 'p7c'],
+  'application/pkcs7-signature': ['p7s'],
+  'application/pkcs8': ['p8'],
+  'application/pkix-attr-cert': ['ac'],
+  'application/pkix-cert': ['cer'],
+  'application/pkix-crl': ['crl'],
+  'application/pkix-pkipath': ['pkipath'],
+  'application/pkixcmp': ['pki'],
+  'application/pls+xml': ['pls'],
+  'application/postscript': ['ai', 'eps', 'ps'],
+  'application/provenance+xml': ['provx'],
+  'application/pskc+xml': ['pskcxml'],
+  'application/raml+yaml': ['raml'],
+  'application/rdf+xml': ['rdf', 'owl'],
+  'application/reginfo+xml': ['rif'],
+  'application/relax-ng-compact-syntax': ['rnc'],
+  'application/resource-lists+xml': ['rl'],
+  'application/resource-lists-diff+xml': ['rld'],
+  'application/rls-services+xml': ['rs'],
+  'application/route-apd+xml': ['rapd'],
+  'application/route-s-tsid+xml': ['sls'],
+  'application/route-usd+xml': ['rusd'],
+  'application/rpki-ghostbusters': ['gbr'],
+  'application/rpki-manifest': ['mft'],
+  'application/rpki-roa': ['roa'],
+  'application/rsd+xml': ['rsd'],
+  'application/rss+xml': ['rss'],
+  'application/rtf': ['rtf'],
+  'application/sbml+xml': ['sbml'],
+  'application/scvp-cv-request': ['scq'],
+  'application/scvp-cv-response': ['scs'],
+  'application/scvp-vp-request': ['spq'],
+  'application/scvp-vp-response': ['spp'],
+  'application/sdp': ['sdp'],
+  'application/senml+xml': ['senmlx'],
+  'application/sensml+xml': ['sensmlx'],
+  'application/set-payment-initiation': ['setpay'],
+  'application/set-registration-initiation': ['setreg'],
+  'application/shf+xml': ['shf'],
+  'application/sieve': ['siv', 'sieve'],
+  'application/smil+xml': ['smi', 'smil'],
+  'application/sparql-query': ['rq'],
+  'application/sparql-results+xml': ['srx'],
+  'application/sql': ['sql'],
+  'application/srgs': ['gram'],
+  'application/srgs+xml': ['grxml'],
+  'application/sru+xml': ['sru'],
+  'application/ssdl+xml': ['ssdl'],
+  'application/ssml+xml': ['ssml'],
+  'application/swid+xml': ['swidtag'],
+  'application/tei+xml': ['tei', 'teicorpus'],
+  'application/thraud+xml': ['tfi'],
+  'application/timestamped-data': ['tsd'],
+  'application/toml': ['toml'],
+  'application/trig': ['trig'],
+  'application/ttml+xml': ['ttml'],
+  'application/ubjson': ['ubj'],
+  'application/urc-ressheet+xml': ['rsheet'],
+  'application/urc-targetdesc+xml': ['td'],
+  'application/voicexml+xml': ['vxml'],
+  'application/wasm': ['wasm'],
+  'application/watcherinfo+xml': ['wif'],
+  'application/widget': ['wgt'],
+  'application/winhlp': ['hlp'],
+  'application/wsdl+xml': ['wsdl'],
+  'application/wspolicy+xml': ['wspolicy'],
+  'application/xaml+xml': ['xaml'],
+  'application/xcap-att+xml': ['xav'],
+  'application/xcap-caps+xml': ['xca'],
+  'application/xcap-diff+xml': ['xdf'],
+  'application/xcap-el+xml': ['xel'],
+  'application/xcap-ns+xml': ['xns'],
+  'application/xenc+xml': ['xenc'],
+  'application/xfdf': ['xfdf'],
+  'application/xhtml+xml': ['xhtml', 'xht'],
+  'application/xliff+xml': ['xlf'],
+  'application/xml': ['xml', 'xsl', 'xsd', 'rng'],
+  'application/xml-dtd': ['dtd'],
+  'application/xop+xml': ['xop'],
+  'application/xproc+xml': ['xpl'],
+  'application/xslt+xml': ['*xsl', 'xslt'],
+  'application/xspf+xml': ['xspf'],
+  'application/xv+xml': ['mxml', 'xhvml', 'xvml', 'xvm'],
+  'application/yang': ['yang'],
+  'application/yin+xml': ['yin'],
+  'application/zip': ['zip'],
+  'application/zip+dotlottie': ['lottie'],
+  'audio/3gpp': ['*3gpp'],
+  'audio/aac': ['adts', 'aac'],
+  'audio/adpcm': ['adp'],
+  'audio/amr': ['amr'],
+  'audio/basic': ['au', 'snd'],
+  'audio/midi': ['mid', 'midi', 'kar', 'rmi'],
+  'audio/mobile-xmf': ['mxmf'],
+  'audio/mp3': ['*mp3'],
+  'audio/mp4': ['m4a', 'mp4a', 'm4b'],
+  'audio/mpeg': ['mpga', 'mp2', 'mp2a', 'mp3', 'm2a', 'm3a'],
+  'audio/ogg': ['oga', 'ogg', 'spx', 'opus'],
+  'audio/s3m': ['s3m'],
+  'audio/silk': ['sil'],
+  'audio/wav': ['wav'],
+  'audio/wave': ['*wav'],
+  'audio/webm': ['weba'],
+  'audio/xm': ['xm'],
+  'font/collection': ['ttc'],
+  'font/otf': ['otf'],
+  'font/ttf': ['ttf'],
+  'font/woff': ['woff'],
+  'font/woff2': ['woff2'],
+  'image/aces': ['exr'],
+  'image/apng': ['apng'],
+  'image/avci': ['avci'],
+  'image/avcs': ['avcs'],
+  'image/avif': ['avif'],
+  'image/bmp': ['bmp', 'dib'],
+  'image/cgm': ['cgm'],
+  'image/dicom-rle': ['drle'],
+  'image/dpx': ['dpx'],
+  'image/emf': ['emf'],
+  'image/fits': ['fits'],
+  'image/g3fax': ['g3'],
+  'image/gif': ['gif'],
+  'image/heic': ['heic'],
+  'image/heic-sequence': ['heics'],
+  'image/heif': ['heif'],
+  'image/heif-sequence': ['heifs'],
+  'image/hej2k': ['hej2'],
+  'image/ief': ['ief'],
+  'image/jaii': ['jaii'],
+  'image/jais': ['jais'],
+  'image/jls': ['jls'],
+  'image/jp2': ['jp2', 'jpg2'],
+  'image/jpeg': ['jpg', 'jpeg', 'jpe'],
+  'image/jph': ['jph'],
+  'image/jphc': ['jhc'],
+  'image/jpm': ['jpm', 'jpgm'],
+  'image/jpx': ['jpx', 'jpf'],
+  'image/jxl': ['jxl'],
+  'image/jxr': ['jxr'],
+  'image/jxra': ['jxra'],
+  'image/jxrs': ['jxrs'],
+  'image/jxs': ['jxs'],
+  'image/jxsc': ['jxsc'],
+  'image/jxsi': ['jxsi'],
+  'image/jxss': ['jxss'],
+  'image/ktx': ['ktx'],
+  'image/ktx2': ['ktx2'],
+  'image/pjpeg': ['jfif'],
+  'image/png': ['png'],
+  'image/sgi': ['sgi'],
+  'image/svg+xml': ['svg', 'svgz'],
+  'image/t38': ['t38'],
+  'image/tiff': ['tif', 'tiff'],
+  'image/tiff-fx': ['tfx'],
+  'image/webp': ['webp'],
+  'image/wmf': ['wmf'],
+  'message/disposition-notification': ['disposition-notification'],
+  'message/global': ['u8msg'],
+  'message/global-delivery-status': ['u8dsn'],
+  'message/global-disposition-notification': ['u8mdn'],
+  'message/global-headers': ['u8hdr'],
+  'message/rfc822': ['eml', 'mime', 'mht', 'mhtml'],
+  'model/3mf': ['3mf'],
+  'model/gltf+json': ['gltf'],
+  'model/gltf-binary': ['glb'],
+  'model/iges': ['igs', 'iges'],
+  'model/jt': ['jt'],
+  'model/mesh': ['msh', 'mesh', 'silo'],
+  'model/mtl': ['mtl'],
+  'model/obj': ['obj'],
+  'model/prc': ['prc'],
+  'model/step': ['step', 'stp', 'stpnc', 'p21', '210'],
+  'model/step+xml': ['stpx'],
+  'model/step+zip': ['stpz'],
+  'model/step-xml+zip': ['stpxz'],
+  'model/stl': ['stl'],
+  'model/u3d': ['u3d'],
+  'model/vrml': ['wrl', 'vrml'],
+  'model/x3d+binary': ['*x3db', 'x3dbz'],
+  'model/x3d+fastinfoset': ['x3db'],
+  'model/x3d+vrml': ['*x3dv', 'x3dvz'],
+  'model/x3d+xml': ['x3d', 'x3dz'],
+  'model/x3d-vrml': ['x3dv'],
+  'text/cache-manifest': ['appcache', 'manifest'],
+  'text/calendar': ['ics', 'ifb'],
+  'text/coffeescript': ['coffee', 'litcoffee'],
+  'text/css': ['css'],
+  'text/csv': ['csv'],
+  'text/html': ['html', 'htm', 'shtml'],
+  'text/jade': ['jade'],
+  'text/javascript': ['js', 'mjs'],
+  'text/jsx': ['jsx'],
+  'text/less': ['less'],
+  'text/markdown': ['md', 'markdown'],
+  'text/mathml': ['mml'],
+  'text/mdx': ['mdx'],
+  'text/n3': ['n3'],
+  'text/plain': ['txt', 'text', 'conf', 'def', 'list', 'log', 'in', 'ini'],
+  'text/richtext': ['rtx'],
+  'text/rtf': ['*rtf'],
+  'text/sgml': ['sgml', 'sgm'],
+  'text/shex': ['shex'],
+  'text/slim': ['slim', 'slm'],
+  'text/spdx': ['spdx'],
+  'text/stylus': ['stylus', 'styl'],
+  'text/tab-separated-values': ['tsv'],
+  'text/troff': ['t', 'tr', 'roff', 'man', 'me', 'ms'],
+  'text/turtle': ['ttl'],
+  'text/uri-list': ['uri', 'uris', 'urls'],
+  'text/vcard': ['vcard'],
+  'text/vtt': ['vtt'],
+  'text/wgsl': ['wgsl'],
+  'text/xml': ['*xml'],
+  'text/yaml': ['yaml', 'yml'],
+  'video/3gpp': ['3gp', '3gpp'],
+  'video/3gpp2': ['3g2'],
+  'video/h261': ['h261'],
+  'video/h263': ['h263'],
+  'video/h264': ['h264'],
+  'video/iso.segment': ['m4s'],
+  'video/jpeg': ['jpgv'],
+  'video/jpm': ['*jpm', '*jpgm'],
+  'video/mj2': ['mj2', 'mjp2'],
+  'video/mp2t': ['ts', 'm2t', 'm2ts', 'mts'],
+  'video/mp4': ['mp4', 'mp4v', 'mpg4'],
+  'video/mpeg': ['mpeg', 'mpg', 'mpe', 'm1v', 'm2v'],
+  'video/ogg': ['ogv'],
+  'video/quicktime': ['qt', 'mov'],
+  'video/webm': ['webm'],
+};
+Object.freeze(mime);
+export default mime;
 
 /* ----- NAMESPACES ----- */
 /** Set global JSX IntrinsicElements */
@@ -109,6 +496,178 @@ declare global {
 }
 
 /* ----- Special Classes ----- */
+/** ShortCuts */
+export class SC {
+  /** Checks if two data are equal */
+  static equal<T>(a: T, b: T): boolean {
+    if (a == b) return true;
+    if (
+      typeof a !== "object" || a === null ||
+      typeof b !== "object" || b === null
+    ) return false;
+    const keysA = Object.keys(a) as (keyof T)[],
+      keysB = new Set(Object.keys(b));
+    if (keysA.length !== keysB.size) return false;
+    for (const key of keysA) {
+      if (!keysB.has(key as string)) return false;
+      const valA = a[key];
+      const valB = b[key as keyof T];
+      if (!this.equal(valA, valB)) return false;
+    }
+    return true;
+  }
+  /** Checks if one ore more data are equal */
+  static equals<T>(a:T, ...bs:T[]): boolean {
+    for (const b of bs) if (SC.equal(a,b)) return true;
+    return false;
+  }
+  /** Pushes children into array but only the uniques */
+  static unique<T>(des:T[], ...args:T[][]) {
+    for (const arg of args) {
+      for (const val of arg) {
+        // Check if argument value is unique compared to destination
+        let pass = true;
+        for (const org of des) {
+          if (SC.equal(org, val)) {
+            pass = false;
+            break;
+          }
+        }
+        if (!pass) continue;
+        // Add to destination
+        des.push(val);
+      }
+    }
+  }
+  /** Pushes children into array but only the uniques including reference */
+  static unique_ref<T>(des:T[], ...args:T[][]) {
+    for (const arg of args) {
+      for (const val of arg) {
+        // Check if argument value is unique compared to destination
+        let pass = true;
+        for (const org of des) {
+          if (org == val) {
+            pass = false;
+            break;
+          }
+        }
+        if (!pass) continue;
+        // Add to destination
+        des.push(val);
+      }
+    }
+  }
+  /** Replaces object's content without changing reference */
+  static replace(dest:object, from:object) {
+    const tmp = dest as unknown as objstr;
+    for (const key in tmp) {
+      if (Object.prototype.hasOwnProperty.call(tmp, key)) {
+        delete tmp[key];
+      }
+    }
+    Object.assign(tmp, from);
+    return tmp;
+  }
+  /** Generates Server-side's client reference: (...$$) => f($$[index]) */
+  static swc_clientrefer(index:number):swct.MemberExpression {
+    return {
+      type: "MemberExpression",
+      span: { start: 0, end: 0, ctxt: 0 },
+      object: {
+        type: "Identifier",
+        span: { start: 0, end: 0, ctxt: 0 },
+        value: "$$",
+        optional: false,
+      },
+      property: {
+        type: "Computed",
+        span: { start: 0, end: 0, ctxt: 0 },
+        expression: {
+          type: "NumericLiteral",
+          span: { start: 0, end: 0, ctxt: 0 },
+          value: index
+        },
+      },
+    };
+  }
+  /** Generates Client-side's server reference: $call[index] */
+  static swc_serverrefer(call:number, index:number):swct.MemberExpression {
+    return {
+      type: "MemberExpression",
+      span: { start: 0, end: 0, ctxt: 0 },
+      object: {
+        type: "Identifier",
+        span: { start: 0, end: 0, ctxt: 0 },
+        value: `$${call}`,
+        optional: false,
+      },
+      property: {
+        type: "Computed",
+        span: { start: 0, end: 0, ctxt: 0 },
+        expression: {
+          type: "NumericLiteral",
+          span: { start: 0, end: 0, ctxt: 0 },
+          value: index,
+        },
+      },
+    };
+  }
+  /** Generates Client-side's server call: const $no = await $$$(id, ...args) */
+  static swc_servercall(no:number, id:number, args:swct.Argument[]):swct.VariableDeclaration { // TODO, no parse
+    const line = swc.parse(
+      `const $${no} = await $$$(${id})`,
+      { syntax: "ecmascript", target: "es2022" },
+    ).body[0] as swct.VariableDeclaration;
+    ((line.declarations[0]
+      .init! as swct.AwaitExpression).argument as swct.CallExpression)
+      .arguments.push(...args);
+    return line;
+  }
+  /** Generates Server-side code *(Client-side doesnt have an equivelent cause provided funciton is by default client-side)* */
+  static swc_server(args:swct.ExprOrSpread[]):string {
+    return swc.print({
+      type: "Module",
+      span: { start: 0, end: 0, ctxt: 0 },
+      body: [{
+        type: "ExpressionStatement",
+        span: { start: 0, end: 0, ctxt: 0 },
+        expression: {
+          type: "ArrowFunctionExpression",
+          span: { start: 0, end: 0, ctxt: 0 },
+          params: [{
+            type: "RestElement",
+            span: { start: 0, end: 0, ctxt: 0 },
+            rest: { start: 0, end: 0, ctxt: 0 },
+            argument: {
+              type: "Identifier",
+              span: { start: 0, end: 0, ctxt: 0 },
+              value: "$$",
+              optional: false,
+            },
+          }],
+          body: {
+            type: "BlockStatement",
+            span: { start: 0, end: 0, ctxt: 0 },
+            stmts: [
+              {
+                type: "ReturnStatement",
+                span: { start: 0, end: 0, ctxt: 0 },
+                argument: {
+                  type: "ArrayExpression",
+                  span: { start: 0, end: 0, ctxt: 0 },
+                  elements: args,
+                },
+              },
+            ],
+          },
+          async: true,
+          generator: false,
+        },
+      }],
+      interpreter: "",
+    }).code.slice(3, -2);
+  }
+}
 /** State handler
  * - **Client sided state** *(Isolated)* - Represents the data located in the client alone
  *   ```ts
@@ -125,7 +684,7 @@ declare global {
  *   }
  *   ```
  */
-export class State<T extends objstr = objstr, A extends unknown[] = unknown[]> {
+export class State<T extends objstr = objstr> {
   constructor(data: T = {} as T) {
     this.context = data;
     const out = new Proxy(this, {
@@ -139,93 +698,134 @@ export class State<T extends objstr = objstr, A extends unknown[] = unknown[]> {
         target.context[prop as keyof typeof target.context] = value;
         return true;
       },
-    }) as unknown as state_type<T, A>;
+    }) as unknown as state_type<T>;
     Dalx.states.push({
       id: out,
       ctx: data,
       funcs: this.functions,
+      server: [],
       hasback: false,
       annm_func: [] as string[],
-    } as unknown as state_record);
+    } as state_record<T> as state_record);
     return out;
   }
   /** Default/Starting state context for client side state */
   private context: T;
   /** Parsed functions */
-  private functions: state_function<T, A>[] = [];
+  private functions: state_function<T>[] = [];
   /** Creates a new state handler, use this instead of traditional `new` for type handling */
   static new<T extends objstr>(data: T = {} as T) {
     return Object.assign(new State<T>(data), data) as state_type<T>;
+  }
+  /** Gets state record from Dalx State Records */
+  static get<T extends objstr>(state_id:State<T>|state_record<T>):state_record<T> {
+    if (!(state_id instanceof State)) return state_id;
+    const state = (Dalx.states.filter((x) =>
+        x.id == state_id
+      ) as (state_record<T> | undefined)[])[0];
+    if (state === undefined) throw new Error("State not found");
+    return state;
   }
 }
 /** Scope handler
  * > To be only used to parse function like spliting a dual-sided function into client/server sided functions
  */
 export class Scope {
-  constructor(from: Scope | null = null) {
+  constructor(from: Scope | null = null, init:boolean = false) {
     if (from != null) {
       const keys = Object.keys(from) as (keyof Scope)[];
       for (const key of keys) this.copy(key, from[key]);
     }
+    if (init) {
+      this.values = [];
+      this.backs = [];
+    }
   }
   /* ----- Main Properties ----- */
-  /** State variable name *(First argument of the main function)* */
-  state: string = "";
-  /** Namespace backend? *(true:backend, false:frontend, null:undetermined)* */
-  namespace: { [name: string]: boolean | null } = {};
-  /** Backend dependencies */
-  backs: { node: swc_node; args: swc_node[] }[] = [];
-  /** Scope is within itself? */
-  in: boolean = true;
-  /** Scope is currently within state? */
-  instate: boolean = false;
   /** Function currently in scope of *(Is always referenced not cloned!)* */
   func?: swct.ArrowFunctionExpression;
+  /** Namespace backend? 
+    * - `true` - yes and is backend
+    * - `false` - no and is frontend
+    * - `null` - no but undetermined so possibly frontend/backend
+    */
+  namespace: { [name: string]: boolean | null } = {};
+  /** Scope is within itself? */
+  in: boolean | null = null;
+  /** Scope is currently within state? */
+  instate: boolean = false;
+  /** State variable name *(First argument of the main function)* */
+  state: string = "";
+  /** Values used */
+  values: scope_value[] = [];
   /** Number of server sided calls */
   noback: number = 0;
-  /** Resulting function call */
+  /** Backend dependencies *(Referenced)* */
+  backs: swc_node[] = [];
+  /** Resulting function call `(state.functions[id].front)` */
   res?: string;
-  /** Values used */
-  values: {
-    /** Node of value */
-    node: swc_node;
-    /** Is backend dependent? */
-    back: boolean;
-  }[] = [];
 
-  /* ----- Private Methods ----- */
+  /* ----- Methods ----- */
   /** Copies other scope property to current property */
   private copy<K extends keyof Scope>(key: K, value: Scope[K]) {
     (this as Pick<Scope, K>)[key] =
       typeof value === "object" && value !== null && key != "func"
-        ? this.clone(value)
+        ? structuredClone(value)
         : value;
   }
-  /** Cloning Objects */
-  private clone<T>(data: T): T {
-    if (data === null || typeof data !== "object") return data;
-    if (Array.isArray(data)) return data.map((x) => this.clone(x)) as T;
-    const cloned: T = {} as T;
-    for (const key in data) cloned[key] = this.clone(data[key]);
-    return cloned;
-  }
-  /** Checks if two parsed scopes are equal */
-  static equal<T = swct.Node>(a: T, b: T): boolean {
-    if (a == b) return true;
-    if (
-      typeof a !== "object" || a === null ||
-      typeof b !== "object" || b === null
-    ) return false;
-    const keysA = Object.keys(a) as (keyof T)[],
-      keysB = new Set(Object.keys(b));
-    if (keysA.length !== keysB.size) return false;
-    for (const key of keysA) {
-      if (!keysB.has(key as string)) return false;
-      const valA = a[key];
-      const valB = b[key as keyof T];
-      if (!this.equal(valA, valB)) return false;
+  /** Inserts new values to a scope's value while elliminating duplicating and recording references */
+  insert(values:scope_value[]|swc_node, back:boolean = false) {
+    if (!Array.isArray(values)) {
+      values = [{
+        node: structuredClone(values),
+        back: back,
+        refs: [values]
+      } as scope_value]
     }
-    return true;
+    for (const value of values) {
+      let pass = false;
+      /** Insert to pre-existing values */
+      for (const pvalue of this.values) {
+        if (SC.equal(value.node, pvalue.node)){
+          SC.unique(value.refs, pvalue.refs);
+          pass = true;
+          break;
+        }
+      }
+      /** Insert has its own new entry */
+      if (!pass) this.values.push(value);
+    }
+  } 
+  /** Replaces an instance of a value with new value */
+  replace(valA:swc_node, valB:swc_node) {
+    const xvalA = Object.entries(this.values).filter(x=>x[1].refs.includes(valA))[0]??null;
+    if (xvalA != null) {
+      /** Remove valA */
+      const back = xvalA[1].back;
+      if (xvalA[1].refs.length == 1) {
+        this.values.splice(Number(xvalA[0]), 1);
+      } else {
+        xvalA[1].refs.splice(xvalA[1].refs.indexOf(valA), 1);
+      }
+      
+      const xvalB = Object.entries(this.values).filter(x=>SC.equal(x[1].node, valB))[0]??null;
+
+      /** Insert valB */
+      if (xvalB != null) {
+        SC.unique_ref(xvalB[1].refs, [valB]);
+      } else {
+        this.insert(valB, back);
+      }
+    }
+  }
+  /** Inserts a new backend dependencies reference */
+  backref(node:swc_node) {
+    SC.unique_ref(this.backs, [node]);
+  }
+  /** Applys the unique backs and values */
+  apply(...scopes:Scope[]) {
+    SC.unique_ref(this.backs, ...scopes.map(x=>x.backs));
+    this.insert(scopes.map(x=>x.values).flat());
   }
 }
 
@@ -283,14 +883,14 @@ export class Dalx {
   }
 
   /* ----- State Processing ----- */
-  /** States */
+  /** All states */
   static states: state_record[] = [];
   /** States functions */
-  static state_funcs: string[] = [];
+  //static state_funcs: string[] = [];
   /** Parses token with state */
   static parse<T extends objstr = objstr, A extends unknown[] = unknown[]>(
     /** Parsing with respect to this State */
-    state_id: State<T> | state_record<T, A>,
+    state_id: State<T> | state_record<T>,
     /** Node to parse */
     node:
       | embedded_function<T, A>
@@ -299,12 +899,7 @@ export class Dalx {
     scope: Scope = new Scope(),
   ): Scope {
     /** State Record founded */
-    const state = state_id instanceof State
-      ? (Dalx.states.filter((x) =>
-        x.id == state_id
-      ) as (state_record<T, A> | undefined)[])[0]
-      : state_id;
-    if (state === undefined) throw new Error("State not found");
+    const state = State.get(state_id);
 
     /** Parsing a function */
     if (
@@ -354,14 +949,7 @@ export class Dalx {
           returnType: pf.returnType,
         } as swct.ArrowFunctionExpression
         : pf;
-
-      /** Output */
-      const out: state_function<T, A> = {
-        id: node as embedded_function<T, A>,
-        name: "",
-        front: "",
-        args: Math.max(f.params.length - 1, 0),
-      };
+      scope.func = f;
 
       /** Parse arguments in namespace and scope's state name */
       f.params.map((x) => x.type == "Identifier" ? x.value : null)
@@ -379,210 +967,117 @@ export class Dalx {
           argument: f.body,
         } as swct.ReturnStatement];
 
-      /** Processing each lines */
-      scope.func = f;
-      for (let n = 0; n < lines.length; n++) {
-        const line = lines[n];
-        Dalx.parse<T, A>(state, line, scope);
-        // Generating connection between client and server, and server sided code
-        if (scope.backs.length) {
-          state.hasback = true;
-          const no_line = line.type == "ExpressionStatement" &&
-            line.expression.type == "MemberExpression" &&
-            line.expression.object.type == "Identifier" &&
-            /^\$\d+$/.test(line.expression.object.value);
-          const nline = swc.parse(
-            `const $${scope
-              .noback++} = await $$$(${Dalx.state_funcs.length})`,
-            { syntax: "ecmascript", target: "es2022" },
-          ).body[0] as swct.VariableDeclaration;
-          // Insert server request
-          lines.splice(
-            n,
-            no_line ? 1 : 0,
-            nline,
-          );
-          //// @ts-ignore This is based on the code above thus is constant
-
-          const args = ((nline.declarations[0]
-            .init! as swct.AwaitExpression).argument as swct.CallExpression)
-            .arguments;
-          args.push(
-            ...scope.backs.map((x) => x.args).flat().map((x) => ({
-              expression: x,
-            } as swct.Argument)),
-          );
-          if (!no_line) n++;
-          // Generate Server-sided code
-          Dalx.state_funcs.push(
-            swc.print({
-              type: "Module",
-              span: { start: 0, end: 0, ctxt: 0 },
-              body: [{
-                type: "ExpressionStatement",
-                span: { start: 0, end: 0, ctxt: 0 },
-                expression: {
-                  type: "ArrowFunctionExpression",
-                  span: { start: 0, end: 0, ctxt: 0 },
-                  params: [{
-                    type: "RestElement",
-                    span: { start: 0, end: 0, ctxt: 0 },
-                    rest: { start: 0, end: 0, ctxt: 0 },
-                    argument: {
-                      type: "Identifier",
-                      span: { start: 0, end: 0, ctxt: 0 },
-                      value: "$$",
-                      optional: false,
-                    },
-                  }],
-                  body: {
-                    type: "BlockStatement",
-                    span: { start: 0, end: 0, ctxt: 0 },
-                    stmts: [
-                      {
-                        type: "ReturnStatement",
-                        span: { start: 0, end: 0, ctxt: 0 },
-                        argument: {
-                          type: "ArrayExpression",
-                          span: { start: 0, end: 0, ctxt: 0 },
-                          elements: scope.backs.map((x) => {
-                            const node = x.node;
-                            return { expression: node };
-                          }) as (swct.ExprOrSpread | undefined)[],
-                        },
-                      },
-                    ],
-                  },
-                  async: true,
-                  generator: false,
-                },
-              }],
-              interpreter: "",
-            }).code.slice(3, -2),
-          );
-
-          //console.log(scope.backs);
-        }
-        // Reset scopes
+      /** Generate backend (server-sided code) */
+      const gen_back = (
+        /** Starting line Number where server-side starts (Line request will be inserted) */
+        sn:number
+      ) => {
+        state.hasback = true;
+        /** Arugments of new function */
+        const args = scope.values.filter(x => !x.back);
+        /** Replaces all client values with client-sided call */
+        args.forEach((x,n) => {
+          x.refs.forEach(y => SC.replace(y, SC.swc_clientrefer(n)));
+        });
+        /** Duplicate of backend cause the current back will be its client-side equivelent */
+        const backs = structuredClone(scope.backs);
+        /** Replace all server dependencies with server-sided call */
+        scope.backs.map((x,n) => SC.replace(x, SC.swc_serverrefer(scope.noback, n)));
+        /** Insert server call */
+        lines.splice(sn, 0, SC.swc_servercall(scope.noback++, state.server.length, args.map(x=>({expression: x.node} as swct.Argument))));
+        /** Generate Server-sided code */
+        state.server.push(
+          SC.swc_server(backs.map((x) => ({ expression: x } as swct.ExprOrSpread)))
+        );
+        /** Reset scope backend tracking */
         scope.backs = [];
-        scope.instate = false;
         scope.values = [];
+        scope.instate = false;
+      };
+
+      /** Starting line of backend insert */
+      let sno = -1;
+      /** Iterate each lines */
+      for (let n = 0; n < lines.length; n++) {
+        /** Current line, also aids type recognition */
+        const line = lines[n];
+        /** Parse line */
+        Dalx.parse(state, line, scope);
+        /** Check if server-side started */
+        if (sno == -1 && scope.backs.length) sno = n;
+        /** Check if server-side endded */
+        if (sno != -1 && (!scope.backs.length || scope.in == true || n+1 == lines.length)) {
+          gen_back(sno);
+          n++;
+          sno = -1;
+        }
+        /** Delete line if not used *(Just references server response with no use)* */
+        if (line.type == "ExpressionStatement" &&
+          line.expression.type == "MemberExpression" &&
+          line.expression.object.type == "Identifier" &&
+          /^\$\d+$/.test(line.expression.object.value)) {
+          lines.splice(n, 1);
+          n--;
+        }
+        /** Clear values used */
+        if (!scope.backs.length) scope.values = [];
+        /** Just disable `instate` if on */
+        scope.instate = false;
       }
-      out.front = Dalx.deparse(f).split("\n").map((x) => x.trim()).join("");
-      scope.res = out.front;
+
+      /** Output Code */
+      const code = Dalx.deparse(f).split("\n").map((x) => x.trim()).join("");
+      scope.res = code;
+      /** Insert function into parsed state functions */
       if (typeof node == "function") {
-        out.name = Object.keys(state.ctx).filter((x) =>
-          state.ctx[x] == node
-        )[0] ?? "";
-        state.funcs.push(out);
-      }
-      /*console.log(
+        state.funcs.push({
+          id: node as embedded_function<T, A>,
+          name: Object.keys(state.ctx).filter((x) =>
+              state.ctx[x] == node
+            )[0] ?? "",
+          front: code,
+          args: f.params.length
+        });
+      };
+      /** TODO! Remove, cause this is only for debugging */
+      console.log(
         "\x1b[1;32mFRONTEND:\x1b[0m\n" +
           Dalx.deparse(f).split("\n").map((x) => "  " + x).join("\n") +
           "\n\n" +
           "\x1b[1;32mBACKEND:\x1b[0m\n" +
-          Dalx.state_funcs.join("\n").split("\n").map((x) => "  " + x).join(
+          state.server.join("\n").split("\n").map((x) => "  " + x).join(
             "\n",
           ),
-      );*/
-
+      );
       return scope;
     }
     /* ----- PARSING TOKENS ----- */
     if (!scope.func) {
       throw new Error("Cannot parse content not inside of function");
     }
-    /** Inserts a server request at a node */
-    function node_server(node: swc_node, ...args: swc_node[]) {
-      // Technically Impossible Error
-      if (!scope.func) {
-        throw new Error("Function is not defined [This shouldnt happen]");
-      }
-      // Convert the client-sided variables to arguments: var => $$[n]
-      const sargs = scope.values.filter((x) => !x.back).map((x) =>
-        structuredClone(x.node)
-      );
-      for (const arg of args) {
-        for (let n = 0; n < sargs.length; n++) {
-          if (Scope.equal(sargs[n], arg)) {
-            const tnode = arg as unknown as Record<string, unknown>;
-            for (const key in tnode) {
-              if (Object.prototype.hasOwnProperty.call(tnode, key)) {
-                delete tnode[key];
-              }
-            }
-            Object.assign(tnode, {
-              type: "MemberExpression",
-              span: { start: 0, end: 0, ctxt: 0 },
-              object: {
-                type: "Identifier",
-                span: { start: 0, end: 0, ctxt: 0 },
-                value: "$$",
-                optional: false,
-              },
-              property: {
-                type: "Computed",
-                span: { start: 0, end: 0, ctxt: 0 },
-                expression: {
-                  type: "NumericLiteral",
-                  span: { start: 0, end: 0, ctxt: 0 },
-                  value: n,
-                },
-              },
-            });
-            break;
-          }
-        }
-      }
-      scope.func.async = true;
-      scope.backs.push({
-        node: structuredClone(node),
-        args: sargs,
-      });
-      const n = node as unknown as Record<string, unknown>;
-      for (const key in n) {
-        if (Object.prototype.hasOwnProperty.call(n, key)) {
-          delete n[key];
-        }
-      }
-      Object.assign(n, {
-        type: "MemberExpression",
-        span: { start: 0, end: 0, ctxt: 0 },
-        object: {
-          type: "Identifier",
-          span: { start: 0, end: 0, ctxt: 0 },
-          value: `$${scope.noback}`,
-          optional: false,
-        },
-        property: {
-          type: "Computed",
-          span: { start: 0, end: 0, ctxt: 0 },
-          expression: {
-            type: "NumericLiteral",
-            span: { start: 0, end: 0, ctxt: 0 },
-            value: scope.backs.length - 1,
-          },
-        },
-      });
-    }
+    /** Replaces node with a server request/reference */
+    // function node_server(node: swc_node) {
+    //   /** Technically Impossible Error */
+    //   if (!scope.func) {
+    //     throw new Error("Function is not defined [This shouldnt happen]");
+    //   }
+    //   /** Maybe make server-sided function async. TODO! Recheck if still logical */
+    //   scope.func.async = true;
+    //   /** Copy this node to backend dependencies */
+    //   scope.backs.push(node);
+    //   /** Replace this node with a call to server-sided reference *(NVM, also at function creation)* */
+    //   //SC.replace(node, SC.swc_servercall(scope.noback, scope.backs.length-1));
+    // }
     //console.log("\x1b[1;33mSTEP:\x1b[0m", node.type);
     // let|var|const a,b,c,...
     if (node.type == "VariableDeclaration") {
-      const nscope = new Scope(scope);
       for (let n = 0; n < node.declarations.length; n++) {
-        Dalx.parse(state, node.declarations[n], nscope);
-        if (!nscope.in) {
-          scope.backs.push({
-            node: node.declarations.slice(n, 1)[0],
-            args: scope.values.filter((x) => !x.back).map((x) => x.node),
-          });
+        Dalx.parse(state, node.declarations[n], scope);
+        if (scope.in == false) {
+          scope.backref(node.declarations.slice(n, 1)[0]);
         }
-        scope.namespace = { ...scope.namespace, ...nscope.namespace };
-        scope.values.push(...nscope.values);
-        scope.backs.push(...nscope.backs);
-        nscope.in = true;
+        scope.in = true;
       }
-      //const res = node.declarations.map(x => Dalx.parse(state, x, new Scope(scope)));
     } // let|var|const a
     else if (node.type == "VariableDeclarator") {
       if (node.id.type != "Identifier") {
@@ -591,117 +1086,83 @@ export class Dalx {
       if (!node.init) {
         scope.namespace[node.id.value] = null;
       } else {
-        const res = Dalx.parse(state, node.init, scope);
-        scope.namespace[node.id.value] = !res.in;
+        Dalx.parse(state, node.init, scope);
+        scope.namespace[node.id.value] = !scope.in;
       }
     } // Statement
     else if (node.type == "ExpressionStatement") {
       Dalx.parse(state, node.expression, scope);
+    } // Return data
+    else if (node.type == 'ReturnStatement') {
+      Dalx.parse(state, node.argument, scope);
+      scope.in = true; // Cannot return to server cause function is client-sided
     } // a = b
     else if (node.type == "AssignmentExpression") {
       const res = [node.left, node.right].map((x) =>
-        Dalx.parse(state, x, new Scope(scope))
+        Dalx.parse(state, x, new Scope(scope, true))
       );
-      // Server's response is assigned to client's record
-      if (res[0].in && !res[1].in) {
-        node_server(node.right);
-        scope.values = [...scope.values, ...res[1].values];
-      }
+      // Push backend dependent values to stack
+      if (res[0].in != false && res[1].in == false) scope.backref(node.right);
+      else if (res[0].in == false) scope.backref(node);
+      // Set scope
       scope.in = res[0].in;
-      scope.backs = [...scope.backs, ...res[0].backs, ...res[1].backs];
-      scope.values = [...scope.values, ...res[0].values, ...res[1].values];
+      scope.apply(res[1]); // Cant assign value to another value thus only right-hand can be replaced with a value
     } // a.b
     else if (node.type == "MemberExpression") {
       Dalx.parse(state, node.object, scope);
       // Replace "a" with "a.b" in values
-      for (let n = 0; n < scope.values.length; n++) {
-        if (scope.values[n].node == node.object) {
-          scope.values.splice(n, 1);
-        }
-      }
-      scope.values.push({
-        node: node,
-        back: !scope.in,
-      });
+      scope.replace(node.object, node);
       // Collapse State Environment
       if (scope.instate && node.property.type == "Identifier") {
-        const node_prop = node.property;
-        const node_temp = node as unknown as objstr;
-        for (const key in node_temp) {
-          if (Object.prototype.hasOwnProperty.call(node_temp, key)) {
-            delete node_temp[key];
-          }
-        }
-        Object.assign(node_temp, node_prop);
+        SC.replace(node, node.property);
         scope.instate = false;
       }
     } // a o b
     else if (node.type == "BinaryExpression") {
       const res = [node.left, node.right].map((x) =>
-        Dalx.parse(state, x, new Scope(scope))
+        Dalx.parse(state, x, new Scope(scope, true))
       );
-      const back = !res[0].in || !res[1].in;
       // Collapse value "a" and "b" to "a o b" if only they are in the same scope
-      if (res[0].in == res[1].in) {
-        for (let n = 0; n < scope.values.length; n++) {
-          if (
-            scope.values[n].node == node.left ||
-            scope.values[n].node == node.right
-          ) {
-            scope.values.splice(n, 1);
-          }
-        }
-        scope.values.push({ node, back });
-      } else {
-        scope.values.push(...res[0].values, ...res[1].values);
+      if (res[0].in == null || res[1].in == null || res[0].in == res[1].in) {
+        scope.replace(node.left, node);
+        scope.replace(node.right, node);
       }
-      scope.backs.push(...res[0].backs, ...res[1].backs);
-      // A server data is processed with client data, turn the whole thing server-sided (for security)
-      if (back) node_server(node, res[0].in ? node.left : node.right);
+      // Set scope
+      scope.in = res[0].in == null ? res[1].in : res[1].in == null ? res[0].in : res[0].in && res[1].in;
+      scope.apply(...res);
     } // a(b)
     else if (node.type == "CallExpression") {
-      //const res = [node.callee, ...node.arguments.map(x=>x.expression)].map(x => Dalx.parse(state, x, new Scope(scope)));
-      //scope.namespace = Object.fromEntries([...Object.entries(scope.namespace),...res.map(x=>Object.entries(x.namespace)).flat()]);
       const call = Dalx.parse(state, node.callee, new Scope(scope));
-      const client_sided: number[] = [];
       for (let n = 0; n < node.arguments.length; n++) {
         const arg = node.arguments[n];
-        const res = Dalx.parse(state, arg.expression, new Scope(scope));
-        call.values.push(...res.values);
-        call.backs.push(...res.backs);
-        if (call.in && !res.in) node_server(arg.expression);
-        if (res.in) client_sided.push(n);
+        const res = Dalx.parse(state, arg.expression, new Scope(scope, true));
+        // Client calling with server values (has for vise-versa, thats after iteration)
+        if (call.in && res.in == false) scope.backref(arg.expression);
+        call.apply(res);
       }
-      scope.values.push(...call.values);
-      scope.backs.push(...call.backs);
-      if (!call.in) {
-        node_server(
-          node,
-          ...node.arguments.filter((_, n) => client_sided.includes(n)).map(
-            (x) => x.expression,
-          ),
-        );
-      }
+      scope.in = call.in;
+      scope.values = call.values;
+      scope.backs = call.backs;
+      if (scope.in == false) scope.backref(node);
     } // var
     else if (node.type == "Identifier") {
-      scope.in = Object.keys(scope.namespace).filter((x) =>
+      /** Shared identifiers between server and client side */
+      const shared = ['Number','String','Boolean','Object','Function','Math'];
+      scope.in = shared.includes(node.value) ? null : (Object.keys(scope.namespace).filter((x) =>
         x == node.value
-      ).map((x) => scope.namespace[x] != true)[0] ?? false;
+      ).map((x) => scope.namespace[x] == null ? null : !scope.namespace[x])[0] ?? false);
       scope.instate = scope.state == node.value;
       if (scope.instate) {
         node.value = "window";
       }
-      scope.values.push({
-        node: node,
-        back: !scope.in,
-      });
+      if (!shared.includes(node.value)) scope.insert(node, !scope.in);
       return scope;
     } // raw
     else if (
       ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral"]
         .includes(node.type)
     ) {
-      scope.in = true;
+      scope.in = null;
     } // No match
     else {
       console.error(`\x1b[1;31mUnknown type\x1b[0m ${node.type}`, node);
@@ -712,7 +1173,7 @@ export class Dalx {
   }
   /** Initialized code for client state */
   static state_code<T extends objstr = objstr, A extends unknown[] = unknown[]>(
-    state: state_record<T, A>,
+    state: state_record<T>,
   ): string {
     return Object.keys(state.ctx).length
       ? `let ${
@@ -731,7 +1192,7 @@ export class Dalx {
   static state_function<
     T extends objstr = objstr,
     A extends unknown[] = unknown[],
-  >(state: state_record<T, A>, func: embedded_function<T, A>): string {
+  >(state: state_record<T>, func: embedded_function<T, A>): string {
     // Find function in parsed functions
     let res = state.funcs.filter((x) => x.id == func);
     // Find function in main scope(scp)
@@ -861,10 +1322,18 @@ export class Route extends Dalx {
   }
   override content(req: Request | null = null): unknown {
     if (req && new URL(req.url).pathname == this.path) {
+      let type = "application/octet-stream";
+      const ext = this.path.slice(this.path.lastIndexOf('.')+1).toLowerCase();
+      for (const key in mime) {
+        if (mime[key].includes(ext)) {
+          type = key;
+          break;
+        }
+      }
       return !this.data ? this.children : new Response(this.data, {
         status: 200,
         headers: {
-          "Content-Type": contentType(this.path) ?? "text/plain",
+          "Content-Type": type,
           "Content-Length": (typeof this.data == "string"
             ? this.data.length
             : this.data.byteLength).toString(),
@@ -905,7 +1374,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     const state = arg_state instanceof State
       ? (Dalx.states.filter((x) =>
         x.id == arg_state
-      ) as (state_record<T, A> | undefined)[])[0]
+      ) as (state_record<T> | undefined)[])[0]
       : arg_state;
     if (state === undefined) throw new Error("State not found");
     this.state = state;
@@ -967,14 +1436,14 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
         this.state
       ) {
         const body = await req.json() as [number, ...unknown[]];
-        if (body.length < 0 && typeof body[0] != "number") {
+        if (body.length < 0 && typeof body[0] != "number" || body[0] < 0 || body[0] >= this.state.server.length) {
           return new Response("[]", {
             status: 400,
             headers: { "Content-Type": "application/json" },
           });
         }
         const res = await Dalx.run_stack.request(
-          `(${Dalx.state_funcs[body[0]]})(${
+          `(${this.state.server[body[0]]})(${
             JSON.stringify(body.slice(1)).slice(1, -1)
           })`,
         );
@@ -995,7 +1464,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
   /** Server of Application */
   server: Deno.HttpServer | null = null;
   /** State of Application (Client Side) */
-  state: state_record<T, A> | null = null;
+  state: state_record<T> | null = null;
 }
 
 /* ----- TESTING ----- */
