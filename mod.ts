@@ -1476,6 +1476,9 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     await this.server.finished;
   }
   async desk() {
+    /** Fix this rendering problem! */
+    await this.render(null, this);
+
     /* Set a unique console title and then find it to hide (SW_HIDE = 0) */
     await wcws.setCurrentConsoleWindowTitleIncludingDelay('DenoWebviewApp');
     wcws.findNamedConsoleWindowAndSetWindowState('DenoWebviewApp', 0);
@@ -1483,7 +1486,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     /* Create window */
     const view = new Webview();
     view.title = this.name;
-    view.navigate(`data:text/html,${encodeURIComponent(await this.render(null, this) as string)}`);
+    const cont = await this.render(null, this) as string;
+    view.navigate(`data:text/html,${encodeURIComponent(cont)}`);
     await view.run();
     Dalx.exit();
   }
