@@ -1093,6 +1093,11 @@ export class Dalx {
     } // Statement
     else if (node.type == "ExpressionStatement") {
       Dalx.parse(state, node.expression, scope);
+    } // a ? b : c
+    else if (node.type == 'ConditionalExpression') {
+      const res = [node.test, node.consequent, node.alternate].map(x => Dalx.parse(state, x, new Scope(scope, true)));
+      scope.in = res.every(x=>x.in!=false);
+      scope.apply(...res);
     } // Return data
     else if (node.type == 'ReturnStatement') {
       Dalx.parse(state, node.argument, scope);
