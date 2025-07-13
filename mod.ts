@@ -42,6 +42,8 @@
 import * as DOM from "./type.ts";
 import * as swc from "https://deno.land/x/swc@0.2.1/mod.ts";
 import * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
+import * as wcws from 'jsr:@svefro/win-console-window-state';
+import { Webview } from 'jsr:@webview/webview';
 export { DOM };
 
 /* ----- TYPES ----- */
@@ -1240,9 +1242,15 @@ export class Dalx {
       interpreter: "",
     }).code.slice(3, -2);
   }
+  static exit() {
+    Dalx.active = false;
+    Dalx.run_stack.request('');
+    Deno.exit(0);
+  }
+  static active:boolean = true;
   /** Main run - Allows to pass scope to modified function */
   static async run(loop: (code: string) => unknown[]) {
-    while (true) {
+    while (this.active) {
       const code = await new Promise<string>((res) => {
         /** Gets the first in stack */
         if (Dalx.run_stack.codes.length) res(Dalx.run_stack.codes.shift()!);
@@ -1366,7 +1374,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       /** State of client's browser */
       state?: State<T>;
       /** Desktop Window by `width,height,x,y` */
-      desk?: number[];
+      desk?: number[] | boolean;
       /** Starting function before request */
       start?: (req: Request) => void;
     },
@@ -1396,6 +1404,9 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
             : 80,
         );
       } else this.host();
+    }
+    if ("desk" in attr) {
+      this.desk();
     }
   }
   override content(_req: Request | null = null): unknown {
@@ -1463,6 +1474,18 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       return cont;
     });
     await this.server.finished;
+  }
+  async desk() {
+    /* Set a unique console title and then find it to hide (SW_HIDE = 0) */
+    await wcws.setCurrentConsoleWindowTitleIncludingDelay('DenoWebviewApp');
+    wcws.findNamedConsoleWindowAndSetWindowState('DenoWebviewApp', 0);
+
+    /* Create window */
+    const view = new Webview();
+    view.title = this.name;
+    view.navigate(`data:text/html,${encodeURIComponent(await this.render(null, this) as string)}`);
+    await view.run();
+    Dalx.exit();
   }
   /** Name of Application */
   name: string;
