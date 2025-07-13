@@ -753,7 +753,7 @@ export class Scope {
   /** Scope is within itself? */
   in: boolean | null = null;
   /** Scope is currently within state? */
-  instate: boolean = false;
+  //instate: boolean = false;
   /** State variable name *(First argument of the main function)* */
   state: string = "";
   /** Values used */
@@ -972,6 +972,7 @@ export class Dalx {
         /** Starting line Number where server-side starts (Line request will be inserted) */
         sn:number
       ) => {
+        f.async = true;
         state.hasback = true;
         /** Arugments of new function */
         const args = scope.values.filter(x => !x.back);
@@ -992,7 +993,7 @@ export class Dalx {
         /** Reset scope backend tracking */
         scope.backs = [];
         scope.values = [];
-        scope.instate = false;
+        //scope.instate = false;
       };
 
       /** Starting line of backend insert */
@@ -1022,7 +1023,7 @@ export class Dalx {
         /** Clear values used */
         if (!scope.backs.length) scope.values = [];
         /** Just disable `instate` if on */
-        scope.instate = false;
+        //scope.instate = false;
       }
 
       /** Output Code */
@@ -1039,7 +1040,7 @@ export class Dalx {
           args: f.params.length
         });
       };
-      /** TODO! Remove, cause this is only for debugging */
+      /** TODO! Remove, cause this is only for debugging *
       console.log(
         "\x1b[1;32mFRONTEND:\x1b[0m\n" +
           Dalx.deparse(f).split("\n").map((x) => "  " + x).join("\n") +
@@ -1048,7 +1049,7 @@ export class Dalx {
           state.server.join("\n").split("\n").map((x) => "  " + x).join(
             "\n",
           ),
-      );
+      );//*/
       return scope;
     }
     /* ----- PARSING TOKENS ----- */
@@ -1110,13 +1111,13 @@ export class Dalx {
     } // a.b
     else if (node.type == "MemberExpression") {
       Dalx.parse(state, node.object, scope);
-      // Replace "a" with "a.b" in values
-      scope.replace(node.object, node);
       // Collapse State Environment
-      if (scope.instate && node.property.type == "Identifier") {
+      if (scope.in && node.object.type == 'Identifier' && node.object.value == 'window' && node.property.type == "Identifier") {
+        scope.replace(node.object, node.property);
         SC.replace(node, node.property);
-        scope.instate = false;
       }
+      // Replace "a" with "a.b" in values
+      else scope.replace(node.object, node);
     } // a o b
     else if (node.type == "BinaryExpression") {
       const res = [node.left, node.right].map((x) =>
@@ -1151,8 +1152,7 @@ export class Dalx {
       scope.in = shared.includes(node.value) ? null : (Object.keys(scope.namespace).filter((x) =>
         x == node.value
       ).map((x) => scope.namespace[x] == null ? null : !scope.namespace[x])[0] ?? false);
-      scope.instate = scope.state == node.value;
-      if (scope.instate) {
+      if (scope.state == node.value) {
         node.value = "window";
       }
       if (!shared.includes(node.value)) scope.insert(node, !scope.in);
