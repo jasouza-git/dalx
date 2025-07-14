@@ -40,10 +40,10 @@
  * @module
  */
 import * as DOM from "./type.ts";
-import * as swc from "https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/atp2/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/refs/heads/master/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/d7d78162d8bce8f330b43e0881cf8b39e926a11d/mod.ts"; //"./lib/swc/mod.ts";
+import * as swc from "https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/main/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/refs/heads/master/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/d7d78162d8bce8f330b43e0881cf8b39e926a11d/mod.ts"; //"./lib/swc/mod.ts";
 import * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
 import * as wcws from "jsr:@svefro/win-console-window-state";
-import { Webview } from "https://raw.githubusercontent.com/jasouza-git/ext_webview_deno/882e3c536ab158a2c90f6be79b65ee3b88e92037/mod.ts"; //"./lib/webview/mod.ts";
+import { Webview } from "https://raw.githubusercontent.com/jasouza-git/ext_webview_deno/main/mod.ts"; //"./lib/webview/mod.ts";
 export { DOM };
 
 /* ----- TYPES ----- */
