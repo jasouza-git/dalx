@@ -1,0 +1,86 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@denosaurs/plug@*": "1.1.0",
+    "jsr:@denosaurs/plug@1": "1.1.0",
+    "jsr:@std/encoding@*": "1.0.10",
+    "jsr:@std/encoding@1": "1.0.10",
+    "jsr:@std/fmt@*": "1.0.8",
+    "jsr:@std/fmt@1": "1.0.8",
+    "jsr:@std/fs@*": "1.0.18",
+    "jsr:@std/fs@1": "1.0.18",
+    "jsr:@std/path@*": "1.1.0",
+    "jsr:@std/path@1": "1.1.0",
+    "jsr:@std/path@^1.1.0": "1.1.0",
+    "jsr:@svefro/win-console-window-state@*": "0.2.1",
+    "jsr:@webview/webview@*": "0.9.0",
+    "npm:@types/web@*": "0.0.241"
+  },
+  "jsr": {
+    "@denosaurs/plug@1.1.0": {
+      "integrity": "eb2f0b7546c7bca2000d8b0282c54d50d91cf6d75cb26a80df25a6de8c4bc044",
+      "dependencies": [
+        "jsr:@std/encoding@1",
+        "jsr:@std/fmt@1",
+        "jsr:@std/fs@1",
+        "jsr:@std/path@1"
+      ]
+    },
+    "@std/encoding@1.0.10": {
+      "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
+    },
+    "@std/fmt@1.0.8": {
+      "integrity": "71e1fc498787e4434d213647a6e43e794af4fd393ef8f52062246e06f7e372b7"
+    },
+    "@std/fs@1.0.18": {
+      "integrity": "24bcad99eab1af4fde75e05da6e9ed0e0dce5edb71b7e34baacf86ffe3969f3a",
+      "dependencies": [
+        "jsr:@std/path@^1.1.0"
+      ]
+    },
+    "@std/path@1.1.0": {
+      "integrity": "ddc94f8e3c275627281cbc23341df6b8bcc874d70374f75fec2533521e3d6886"
+    },
+    "@svefro/win-console-window-state@0.2.1": {
+      "integrity": "19ffcaba347e59fde9bb0471fab5b2626f5d8d16bc2ac45e993497ed3036bb83"
+    },
+    "@webview/webview@0.9.0": {
+      "integrity": "a7c4d787aafa43258ff287f71a16679d5ca3d9b65e5d232c60c3985f9ab3e0ce",
+      "dependencies": [
+        "jsr:@denosaurs/plug@1"
+      ]
+    }
+  },
+  "npm": {
+    "@types/web@0.0.241": {
+      "integrity": "sha512-aHz73musjS4z8Sm0wLaEj4lOaRxhKZRD4XerKL4rxNhhqmvthKkYzS0kHLEVsjOFRN2zo3gQAlyf0EKL1QYYQg=="
+    }
+  },
+  "redirects": {
+    "https://esm.sh/@types/web": "https://esm.sh/@types/web@0.0.245/index.d.ts"
+  },
+  "remote": {
+    "https://deno.land/std@0.224.0/media_types/_db.ts": "19563a2491cd81b53b9c1c6ffd1a9145c355042d4a854c52f6e1424f73ff3923",
+    "https://deno.land/std@0.224.0/media_types/_util.ts": "e0b8da0c7d8ad2015cf27ac16ddf0809ac984b2f3ec79f7fa4206659d4f10deb",
+    "https://deno.land/std@0.224.0/media_types/content_type.ts": "ed3f2e1f243b418ad3f441edc95fd92efbadb0f9bde36219c7564c67f9639513",
+    "https://deno.land/std@0.224.0/media_types/extension.ts": "ec91e1818864cb84f8053ecafb270eaca702412c15c2086929ae34132e11c56a",
+    "https://deno.land/std@0.224.0/media_types/extensions_by_type.ts": "9db10797e09421815688c8f7a2fbfd5dcb040fa5c488278f1b9e04359369bd0b",
+    "https://deno.land/std@0.224.0/media_types/format_media_type.ts": "ffef4718afa2489530cb94021bb865a466eb02037609f7e82899c017959d288a",
+    "https://deno.land/std@0.224.0/media_types/get_charset.ts": "277ebfceb205bd34e616fe6764ef03fb277b77f040706272bea8680806ae3f11",
+    "https://deno.land/std@0.224.0/media_types/mod.ts": "c8acfa43ce3993e99f4d8aa60fb828a4eee3ab6920aaeb90f6a3d63f6f4f3435",
+    "https://deno.land/std@0.224.0/media_types/parse_media_type.ts": "487f000a38c230ccbac25420a50f600862e06796d0eee19d19631b9e84ee9654",
+    "https://deno.land/std@0.224.0/media_types/type_by_extension.ts": "bf4e3f5d6b58b624d5daa01cbb8b1e86d9939940a77e7c26e796a075b60ec73b",
+    "https://deno.land/std@0.224.0/media_types/vendor/mime-db.v1.52.0.ts": "0218d2c7d900e8cd6fa4a866e0c387712af4af9a1bae55d6b2546c73d273a1e6",
+    "https://deno.land/x/lz4@v0.1.2/mod.ts": "4decfc1a3569d03fd1813bd39128b71c8f082850fe98ecfdde20025772916582",
+    "https://deno.land/x/lz4@v0.1.2/wasm.js": "b9c65605327ba273f0c76a6dc596ec534d4cda0f0225d7a94ebc606782319e46",
+    "https://deno.land/x/swc@0.2.1/lib/deno_swc.generated.js": "a112eb5a4871bcbd5b660d3fd9d7afdd5cf2bb9e135eb9b04aceaa24d16481a0",
+    "https://deno.land/x/swc@0.2.1/mod.ts": "9e03f5daf4c2a25208e34e19ce3e997d2e23a5a11ee8c8ed58023b0e3626073f",
+    "https://raw.githubusercontent.com/jasouza-git/dalx/main/mod.ts": "78491278f17a7cebbdec35cf1194840865a6c818b72c3d65db2c7bef99c734f9",
+    "https://raw.githubusercontent.com/jasouza-git/dalx/main/type.ts": "72789a58d0f04e65329bd2161e5a877a02f7cc37fd8c6ba912f6345ca8868105"
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@types/web@*"
+    ]
+  }
+}

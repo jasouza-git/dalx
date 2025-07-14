@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@types/web": "npm:@types/web"
+  },
+  "compilerOptions": {
+      "jsx": "react",
+      "jsxFactory": "Dalx.jsx"
+  }
+}
