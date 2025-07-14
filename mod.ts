@@ -71,7 +71,8 @@ export type state_record<
 /** Embedded Function save state */
 export type state_function<
   T extends objstr = objstr,
-  // @ts-ignore A function's arguments is not limited to the same type
+  // A function's arguments is not limited to the same type
+  // deno-lint-ignore no-explicit-any
   A extends any[] = any[],
 > = {
   /** To be parsed function for identification *(We dont include inner functions cause they might have similar content but different context)* */
