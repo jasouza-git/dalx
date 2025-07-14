@@ -1,0 +1,6 @@
+[submodule "lib/webview"]
+	path = lib/webview
+	url = https://github.com/jasouza-git/ext_webview_deno.git
+[submodule "lib/swc"]
+	path = lib/swc
+	url = https://github.com/jasouza-git/ext_deno_swc.git

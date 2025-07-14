@@ -40,26 +40,27 @@
  * @module
  */
 import * as DOM from "./type.ts";
-import * as swc from "https://deno.land/x/swc@0.2.1/mod.ts";
+import * as swc from "./lib/swc/mod.ts";
 import * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
-import * as wcws from 'jsr:@svefro/win-console-window-state';
-import { Webview } from 'jsr:@webview/webview';
+import * as wcws from "jsr:@svefro/win-console-window-state";
+import { Webview } from "./lib/webview/mod.ts";
 export { DOM };
 
 /* ----- TYPES ----- */
 /** Record of state by Dalx */
 export type state_record<
-  T extends objstr = objstr
+  T extends objstr = objstr,
 > = {
   /* ----- Properties ----- */
   /** State used for Identification */
   id: State<T>;
   /** Context of state */
   ctx: T;
-  /** Processed functions inside state */ // @ts-ignore There can by any types of arugment types
+  /** Processed functions inside state */
+  // @ts-ignore There can by any types of arugment types
   funcs: state_function<T>[];
   /** Server-sided sub-functions codes */
-  server: string[],
+  server: string[];
 
   /* ----- For encoding ----- */
   /** Has backend request so setup connection */
@@ -94,7 +95,7 @@ export type embedded_function<
 ) => unknown;
 /** Type of a State including its own methods, its additional methods *(through arguments)*, and its built-in methods *(through client window)* */
 export type state_type<
-  T extends objstr = objstr
+  T extends objstr = objstr,
 > = T & State<T> & DOM.Window;
 /** Scope values */
 export type scope_value = {
@@ -121,368 +122,368 @@ export type swc_node =
 /* ----- DATA ----- */
 /** Mime and their extensions *(https://github.com/broofa/mime/blob/main/types/standard.ts)* */
 const mime: { [key: string]: string[] } = {
-  'application/andrew-inset': ['ez'],
-  'application/appinstaller': ['appinstaller'],
-  'application/applixware': ['aw'],
-  'application/appx': ['appx'],
-  'application/appxbundle': ['appxbundle'],
-  'application/atom+xml': ['atom'],
-  'application/atomcat+xml': ['atomcat'],
-  'application/atomdeleted+xml': ['atomdeleted'],
-  'application/atomsvc+xml': ['atomsvc'],
-  'application/atsc-dwd+xml': ['dwd'],
-  'application/atsc-held+xml': ['held'],
-  'application/atsc-rsat+xml': ['rsat'],
-  'application/automationml-aml+xml': ['aml'],
-  'application/automationml-amlx+zip': ['amlx'],
-  'application/bdoc': ['bdoc'],
-  'application/calendar+xml': ['xcs'],
-  'application/ccxml+xml': ['ccxml'],
-  'application/cdfx+xml': ['cdfx'],
-  'application/cdmi-capability': ['cdmia'],
-  'application/cdmi-container': ['cdmic'],
-  'application/cdmi-domain': ['cdmid'],
-  'application/cdmi-object': ['cdmio'],
-  'application/cdmi-queue': ['cdmiq'],
-  'application/cpl+xml': ['cpl'],
-  'application/cu-seeme': ['cu'],
-  'application/cwl': ['cwl'],
-  'application/dash+xml': ['mpd'],
-  'application/dash-patch+xml': ['mpp'],
-  'application/davmount+xml': ['davmount'],
-  'application/dicom': ['dcm'],
-  'application/docbook+xml': ['dbk'],
-  'application/dssc+der': ['dssc'],
-  'application/dssc+xml': ['xdssc'],
-  'application/ecmascript': ['ecma'],
-  'application/emma+xml': ['emma'],
-  'application/emotionml+xml': ['emotionml'],
-  'application/epub+zip': ['epub'],
-  'application/exi': ['exi'],
-  'application/express': ['exp'],
-  'application/fdf': ['fdf'],
-  'application/fdt+xml': ['fdt'],
-  'application/font-tdpfr': ['pfr'],
-  'application/geo+json': ['geojson'],
-  'application/gml+xml': ['gml'],
-  'application/gpx+xml': ['gpx'],
-  'application/gxf': ['gxf'],
-  'application/gzip': ['gz'],
-  'application/hjson': ['hjson'],
-  'application/hyperstudio': ['stk'],
-  'application/inkml+xml': ['ink', 'inkml'],
-  'application/ipfix': ['ipfix'],
-  'application/its+xml': ['its'],
-  'application/java-archive': ['jar', 'war', 'ear'],
-  'application/java-serialized-object': ['ser'],
-  'application/java-vm': ['class'],
-  'application/javascript': ['*js'],
-  'application/json': ['json', 'map'],
-  'application/json5': ['json5'],
-  'application/jsonml+json': ['jsonml'],
-  'application/ld+json': ['jsonld'],
-  'application/lgr+xml': ['lgr'],
-  'application/lost+xml': ['lostxml'],
-  'application/mac-binhex40': ['hqx'],
-  'application/mac-compactpro': ['cpt'],
-  'application/mads+xml': ['mads'],
-  'application/manifest+json': ['webmanifest'],
-  'application/marc': ['mrc'],
-  'application/marcxml+xml': ['mrcx'],
-  'application/mathematica': ['ma', 'nb', 'mb'],
-  'application/mathml+xml': ['mathml'],
-  'application/mbox': ['mbox'],
-  'application/media-policy-dataset+xml': ['mpf'],
-  'application/mediaservercontrol+xml': ['mscml'],
-  'application/metalink+xml': ['metalink'],
-  'application/metalink4+xml': ['meta4'],
-  'application/mets+xml': ['mets'],
-  'application/mmt-aei+xml': ['maei'],
-  'application/mmt-usd+xml': ['musd'],
-  'application/mods+xml': ['mods'],
-  'application/mp21': ['m21', 'mp21'],
-  'application/mp4': ['*mp4', '*mpg4', 'mp4s', 'm4p'],
-  'application/msix': ['msix'],
-  'application/msixbundle': ['msixbundle'],
-  'application/msword': ['doc', 'dot'],
-  'application/mxf': ['mxf'],
-  'application/n-quads': ['nq'],
-  'application/n-triples': ['nt'],
-  'application/node': ['cjs'],
-  'application/octet-stream': [
-    'bin',
-    'dms',
-    'lrf',
-    'mar',
-    'so',
-    'dist',
-    'distz',
-    'pkg',
-    'bpk',
-    'dump',
-    'elc',
-    'deploy',
-    'exe',
-    'dll',
-    'deb',
-    'dmg',
-    'iso',
-    'img',
-    'msi',
-    'msp',
-    'msm',
-    'buffer',
+  "application/andrew-inset": ["ez"],
+  "application/appinstaller": ["appinstaller"],
+  "application/applixware": ["aw"],
+  "application/appx": ["appx"],
+  "application/appxbundle": ["appxbundle"],
+  "application/atom+xml": ["atom"],
+  "application/atomcat+xml": ["atomcat"],
+  "application/atomdeleted+xml": ["atomdeleted"],
+  "application/atomsvc+xml": ["atomsvc"],
+  "application/atsc-dwd+xml": ["dwd"],
+  "application/atsc-held+xml": ["held"],
+  "application/atsc-rsat+xml": ["rsat"],
+  "application/automationml-aml+xml": ["aml"],
+  "application/automationml-amlx+zip": ["amlx"],
+  "application/bdoc": ["bdoc"],
+  "application/calendar+xml": ["xcs"],
+  "application/ccxml+xml": ["ccxml"],
+  "application/cdfx+xml": ["cdfx"],
+  "application/cdmi-capability": ["cdmia"],
+  "application/cdmi-container": ["cdmic"],
+  "application/cdmi-domain": ["cdmid"],
+  "application/cdmi-object": ["cdmio"],
+  "application/cdmi-queue": ["cdmiq"],
+  "application/cpl+xml": ["cpl"],
+  "application/cu-seeme": ["cu"],
+  "application/cwl": ["cwl"],
+  "application/dash+xml": ["mpd"],
+  "application/dash-patch+xml": ["mpp"],
+  "application/davmount+xml": ["davmount"],
+  "application/dicom": ["dcm"],
+  "application/docbook+xml": ["dbk"],
+  "application/dssc+der": ["dssc"],
+  "application/dssc+xml": ["xdssc"],
+  "application/ecmascript": ["ecma"],
+  "application/emma+xml": ["emma"],
+  "application/emotionml+xml": ["emotionml"],
+  "application/epub+zip": ["epub"],
+  "application/exi": ["exi"],
+  "application/express": ["exp"],
+  "application/fdf": ["fdf"],
+  "application/fdt+xml": ["fdt"],
+  "application/font-tdpfr": ["pfr"],
+  "application/geo+json": ["geojson"],
+  "application/gml+xml": ["gml"],
+  "application/gpx+xml": ["gpx"],
+  "application/gxf": ["gxf"],
+  "application/gzip": ["gz"],
+  "application/hjson": ["hjson"],
+  "application/hyperstudio": ["stk"],
+  "application/inkml+xml": ["ink", "inkml"],
+  "application/ipfix": ["ipfix"],
+  "application/its+xml": ["its"],
+  "application/java-archive": ["jar", "war", "ear"],
+  "application/java-serialized-object": ["ser"],
+  "application/java-vm": ["class"],
+  "application/javascript": ["*js"],
+  "application/json": ["json", "map"],
+  "application/json5": ["json5"],
+  "application/jsonml+json": ["jsonml"],
+  "application/ld+json": ["jsonld"],
+  "application/lgr+xml": ["lgr"],
+  "application/lost+xml": ["lostxml"],
+  "application/mac-binhex40": ["hqx"],
+  "application/mac-compactpro": ["cpt"],
+  "application/mads+xml": ["mads"],
+  "application/manifest+json": ["webmanifest"],
+  "application/marc": ["mrc"],
+  "application/marcxml+xml": ["mrcx"],
+  "application/mathematica": ["ma", "nb", "mb"],
+  "application/mathml+xml": ["mathml"],
+  "application/mbox": ["mbox"],
+  "application/media-policy-dataset+xml": ["mpf"],
+  "application/mediaservercontrol+xml": ["mscml"],
+  "application/metalink+xml": ["metalink"],
+  "application/metalink4+xml": ["meta4"],
+  "application/mets+xml": ["mets"],
+  "application/mmt-aei+xml": ["maei"],
+  "application/mmt-usd+xml": ["musd"],
+  "application/mods+xml": ["mods"],
+  "application/mp21": ["m21", "mp21"],
+  "application/mp4": ["*mp4", "*mpg4", "mp4s", "m4p"],
+  "application/msix": ["msix"],
+  "application/msixbundle": ["msixbundle"],
+  "application/msword": ["doc", "dot"],
+  "application/mxf": ["mxf"],
+  "application/n-quads": ["nq"],
+  "application/n-triples": ["nt"],
+  "application/node": ["cjs"],
+  "application/octet-stream": [
+    "bin",
+    "dms",
+    "lrf",
+    "mar",
+    "so",
+    "dist",
+    "distz",
+    "pkg",
+    "bpk",
+    "dump",
+    "elc",
+    "deploy",
+    "exe",
+    "dll",
+    "deb",
+    "dmg",
+    "iso",
+    "img",
+    "msi",
+    "msp",
+    "msm",
+    "buffer",
   ],
-  'application/oda': ['oda'],
-  'application/oebps-package+xml': ['opf'],
-  'application/ogg': ['ogx'],
-  'application/omdoc+xml': ['omdoc'],
-  'application/onenote': [
-    'onetoc',
-    'onetoc2',
-    'onetmp',
-    'onepkg',
-    'one',
-    'onea',
+  "application/oda": ["oda"],
+  "application/oebps-package+xml": ["opf"],
+  "application/ogg": ["ogx"],
+  "application/omdoc+xml": ["omdoc"],
+  "application/onenote": [
+    "onetoc",
+    "onetoc2",
+    "onetmp",
+    "onepkg",
+    "one",
+    "onea",
   ],
-  'application/oxps': ['oxps'],
-  'application/p2p-overlay+xml': ['relo'],
-  'application/patch-ops-error+xml': ['xer'],
-  'application/pdf': ['pdf'],
-  'application/pgp-encrypted': ['pgp'],
-  'application/pgp-keys': ['asc'],
-  'application/pgp-signature': ['sig', '*asc'],
-  'application/pics-rules': ['prf'],
-  'application/pkcs10': ['p10'],
-  'application/pkcs7-mime': ['p7m', 'p7c'],
-  'application/pkcs7-signature': ['p7s'],
-  'application/pkcs8': ['p8'],
-  'application/pkix-attr-cert': ['ac'],
-  'application/pkix-cert': ['cer'],
-  'application/pkix-crl': ['crl'],
-  'application/pkix-pkipath': ['pkipath'],
-  'application/pkixcmp': ['pki'],
-  'application/pls+xml': ['pls'],
-  'application/postscript': ['ai', 'eps', 'ps'],
-  'application/provenance+xml': ['provx'],
-  'application/pskc+xml': ['pskcxml'],
-  'application/raml+yaml': ['raml'],
-  'application/rdf+xml': ['rdf', 'owl'],
-  'application/reginfo+xml': ['rif'],
-  'application/relax-ng-compact-syntax': ['rnc'],
-  'application/resource-lists+xml': ['rl'],
-  'application/resource-lists-diff+xml': ['rld'],
-  'application/rls-services+xml': ['rs'],
-  'application/route-apd+xml': ['rapd'],
-  'application/route-s-tsid+xml': ['sls'],
-  'application/route-usd+xml': ['rusd'],
-  'application/rpki-ghostbusters': ['gbr'],
-  'application/rpki-manifest': ['mft'],
-  'application/rpki-roa': ['roa'],
-  'application/rsd+xml': ['rsd'],
-  'application/rss+xml': ['rss'],
-  'application/rtf': ['rtf'],
-  'application/sbml+xml': ['sbml'],
-  'application/scvp-cv-request': ['scq'],
-  'application/scvp-cv-response': ['scs'],
-  'application/scvp-vp-request': ['spq'],
-  'application/scvp-vp-response': ['spp'],
-  'application/sdp': ['sdp'],
-  'application/senml+xml': ['senmlx'],
-  'application/sensml+xml': ['sensmlx'],
-  'application/set-payment-initiation': ['setpay'],
-  'application/set-registration-initiation': ['setreg'],
-  'application/shf+xml': ['shf'],
-  'application/sieve': ['siv', 'sieve'],
-  'application/smil+xml': ['smi', 'smil'],
-  'application/sparql-query': ['rq'],
-  'application/sparql-results+xml': ['srx'],
-  'application/sql': ['sql'],
-  'application/srgs': ['gram'],
-  'application/srgs+xml': ['grxml'],
-  'application/sru+xml': ['sru'],
-  'application/ssdl+xml': ['ssdl'],
-  'application/ssml+xml': ['ssml'],
-  'application/swid+xml': ['swidtag'],
-  'application/tei+xml': ['tei', 'teicorpus'],
-  'application/thraud+xml': ['tfi'],
-  'application/timestamped-data': ['tsd'],
-  'application/toml': ['toml'],
-  'application/trig': ['trig'],
-  'application/ttml+xml': ['ttml'],
-  'application/ubjson': ['ubj'],
-  'application/urc-ressheet+xml': ['rsheet'],
-  'application/urc-targetdesc+xml': ['td'],
-  'application/voicexml+xml': ['vxml'],
-  'application/wasm': ['wasm'],
-  'application/watcherinfo+xml': ['wif'],
-  'application/widget': ['wgt'],
-  'application/winhlp': ['hlp'],
-  'application/wsdl+xml': ['wsdl'],
-  'application/wspolicy+xml': ['wspolicy'],
-  'application/xaml+xml': ['xaml'],
-  'application/xcap-att+xml': ['xav'],
-  'application/xcap-caps+xml': ['xca'],
-  'application/xcap-diff+xml': ['xdf'],
-  'application/xcap-el+xml': ['xel'],
-  'application/xcap-ns+xml': ['xns'],
-  'application/xenc+xml': ['xenc'],
-  'application/xfdf': ['xfdf'],
-  'application/xhtml+xml': ['xhtml', 'xht'],
-  'application/xliff+xml': ['xlf'],
-  'application/xml': ['xml', 'xsl', 'xsd', 'rng'],
-  'application/xml-dtd': ['dtd'],
-  'application/xop+xml': ['xop'],
-  'application/xproc+xml': ['xpl'],
-  'application/xslt+xml': ['*xsl', 'xslt'],
-  'application/xspf+xml': ['xspf'],
-  'application/xv+xml': ['mxml', 'xhvml', 'xvml', 'xvm'],
-  'application/yang': ['yang'],
-  'application/yin+xml': ['yin'],
-  'application/zip': ['zip'],
-  'application/zip+dotlottie': ['lottie'],
-  'audio/3gpp': ['*3gpp'],
-  'audio/aac': ['adts', 'aac'],
-  'audio/adpcm': ['adp'],
-  'audio/amr': ['amr'],
-  'audio/basic': ['au', 'snd'],
-  'audio/midi': ['mid', 'midi', 'kar', 'rmi'],
-  'audio/mobile-xmf': ['mxmf'],
-  'audio/mp3': ['*mp3'],
-  'audio/mp4': ['m4a', 'mp4a', 'm4b'],
-  'audio/mpeg': ['mpga', 'mp2', 'mp2a', 'mp3', 'm2a', 'm3a'],
-  'audio/ogg': ['oga', 'ogg', 'spx', 'opus'],
-  'audio/s3m': ['s3m'],
-  'audio/silk': ['sil'],
-  'audio/wav': ['wav'],
-  'audio/wave': ['*wav'],
-  'audio/webm': ['weba'],
-  'audio/xm': ['xm'],
-  'font/collection': ['ttc'],
-  'font/otf': ['otf'],
-  'font/ttf': ['ttf'],
-  'font/woff': ['woff'],
-  'font/woff2': ['woff2'],
-  'image/aces': ['exr'],
-  'image/apng': ['apng'],
-  'image/avci': ['avci'],
-  'image/avcs': ['avcs'],
-  'image/avif': ['avif'],
-  'image/bmp': ['bmp', 'dib'],
-  'image/cgm': ['cgm'],
-  'image/dicom-rle': ['drle'],
-  'image/dpx': ['dpx'],
-  'image/emf': ['emf'],
-  'image/fits': ['fits'],
-  'image/g3fax': ['g3'],
-  'image/gif': ['gif'],
-  'image/heic': ['heic'],
-  'image/heic-sequence': ['heics'],
-  'image/heif': ['heif'],
-  'image/heif-sequence': ['heifs'],
-  'image/hej2k': ['hej2'],
-  'image/ief': ['ief'],
-  'image/jaii': ['jaii'],
-  'image/jais': ['jais'],
-  'image/jls': ['jls'],
-  'image/jp2': ['jp2', 'jpg2'],
-  'image/jpeg': ['jpg', 'jpeg', 'jpe'],
-  'image/jph': ['jph'],
-  'image/jphc': ['jhc'],
-  'image/jpm': ['jpm', 'jpgm'],
-  'image/jpx': ['jpx', 'jpf'],
-  'image/jxl': ['jxl'],
-  'image/jxr': ['jxr'],
-  'image/jxra': ['jxra'],
-  'image/jxrs': ['jxrs'],
-  'image/jxs': ['jxs'],
-  'image/jxsc': ['jxsc'],
-  'image/jxsi': ['jxsi'],
-  'image/jxss': ['jxss'],
-  'image/ktx': ['ktx'],
-  'image/ktx2': ['ktx2'],
-  'image/pjpeg': ['jfif'],
-  'image/png': ['png'],
-  'image/sgi': ['sgi'],
-  'image/svg+xml': ['svg', 'svgz'],
-  'image/t38': ['t38'],
-  'image/tiff': ['tif', 'tiff'],
-  'image/tiff-fx': ['tfx'],
-  'image/webp': ['webp'],
-  'image/wmf': ['wmf'],
-  'message/disposition-notification': ['disposition-notification'],
-  'message/global': ['u8msg'],
-  'message/global-delivery-status': ['u8dsn'],
-  'message/global-disposition-notification': ['u8mdn'],
-  'message/global-headers': ['u8hdr'],
-  'message/rfc822': ['eml', 'mime', 'mht', 'mhtml'],
-  'model/3mf': ['3mf'],
-  'model/gltf+json': ['gltf'],
-  'model/gltf-binary': ['glb'],
-  'model/iges': ['igs', 'iges'],
-  'model/jt': ['jt'],
-  'model/mesh': ['msh', 'mesh', 'silo'],
-  'model/mtl': ['mtl'],
-  'model/obj': ['obj'],
-  'model/prc': ['prc'],
-  'model/step': ['step', 'stp', 'stpnc', 'p21', '210'],
-  'model/step+xml': ['stpx'],
-  'model/step+zip': ['stpz'],
-  'model/step-xml+zip': ['stpxz'],
-  'model/stl': ['stl'],
-  'model/u3d': ['u3d'],
-  'model/vrml': ['wrl', 'vrml'],
-  'model/x3d+binary': ['*x3db', 'x3dbz'],
-  'model/x3d+fastinfoset': ['x3db'],
-  'model/x3d+vrml': ['*x3dv', 'x3dvz'],
-  'model/x3d+xml': ['x3d', 'x3dz'],
-  'model/x3d-vrml': ['x3dv'],
-  'text/cache-manifest': ['appcache', 'manifest'],
-  'text/calendar': ['ics', 'ifb'],
-  'text/coffeescript': ['coffee', 'litcoffee'],
-  'text/css': ['css'],
-  'text/csv': ['csv'],
-  'text/html': ['html', 'htm', 'shtml'],
-  'text/jade': ['jade'],
-  'text/javascript': ['js', 'mjs'],
-  'text/jsx': ['jsx'],
-  'text/less': ['less'],
-  'text/markdown': ['md', 'markdown'],
-  'text/mathml': ['mml'],
-  'text/mdx': ['mdx'],
-  'text/n3': ['n3'],
-  'text/plain': ['txt', 'text', 'conf', 'def', 'list', 'log', 'in', 'ini'],
-  'text/richtext': ['rtx'],
-  'text/rtf': ['*rtf'],
-  'text/sgml': ['sgml', 'sgm'],
-  'text/shex': ['shex'],
-  'text/slim': ['slim', 'slm'],
-  'text/spdx': ['spdx'],
-  'text/stylus': ['stylus', 'styl'],
-  'text/tab-separated-values': ['tsv'],
-  'text/troff': ['t', 'tr', 'roff', 'man', 'me', 'ms'],
-  'text/turtle': ['ttl'],
-  'text/uri-list': ['uri', 'uris', 'urls'],
-  'text/vcard': ['vcard'],
-  'text/vtt': ['vtt'],
-  'text/wgsl': ['wgsl'],
-  'text/xml': ['*xml'],
-  'text/yaml': ['yaml', 'yml'],
-  'video/3gpp': ['3gp', '3gpp'],
-  'video/3gpp2': ['3g2'],
-  'video/h261': ['h261'],
-  'video/h263': ['h263'],
-  'video/h264': ['h264'],
-  'video/iso.segment': ['m4s'],
-  'video/jpeg': ['jpgv'],
-  'video/jpm': ['*jpm', '*jpgm'],
-  'video/mj2': ['mj2', 'mjp2'],
-  'video/mp2t': ['ts', 'm2t', 'm2ts', 'mts'],
-  'video/mp4': ['mp4', 'mp4v', 'mpg4'],
-  'video/mpeg': ['mpeg', 'mpg', 'mpe', 'm1v', 'm2v'],
-  'video/ogg': ['ogv'],
-  'video/quicktime': ['qt', 'mov'],
-  'video/webm': ['webm'],
+  "application/oxps": ["oxps"],
+  "application/p2p-overlay+xml": ["relo"],
+  "application/patch-ops-error+xml": ["xer"],
+  "application/pdf": ["pdf"],
+  "application/pgp-encrypted": ["pgp"],
+  "application/pgp-keys": ["asc"],
+  "application/pgp-signature": ["sig", "*asc"],
+  "application/pics-rules": ["prf"],
+  "application/pkcs10": ["p10"],
+  "application/pkcs7-mime": ["p7m", "p7c"],
+  "application/pkcs7-signature": ["p7s"],
+  "application/pkcs8": ["p8"],
+  "application/pkix-attr-cert": ["ac"],
+  "application/pkix-cert": ["cer"],
+  "application/pkix-crl": ["crl"],
+  "application/pkix-pkipath": ["pkipath"],
+  "application/pkixcmp": ["pki"],
+  "application/pls+xml": ["pls"],
+  "application/postscript": ["ai", "eps", "ps"],
+  "application/provenance+xml": ["provx"],
+  "application/pskc+xml": ["pskcxml"],
+  "application/raml+yaml": ["raml"],
+  "application/rdf+xml": ["rdf", "owl"],
+  "application/reginfo+xml": ["rif"],
+  "application/relax-ng-compact-syntax": ["rnc"],
+  "application/resource-lists+xml": ["rl"],
+  "application/resource-lists-diff+xml": ["rld"],
+  "application/rls-services+xml": ["rs"],
+  "application/route-apd+xml": ["rapd"],
+  "application/route-s-tsid+xml": ["sls"],
+  "application/route-usd+xml": ["rusd"],
+  "application/rpki-ghostbusters": ["gbr"],
+  "application/rpki-manifest": ["mft"],
+  "application/rpki-roa": ["roa"],
+  "application/rsd+xml": ["rsd"],
+  "application/rss+xml": ["rss"],
+  "application/rtf": ["rtf"],
+  "application/sbml+xml": ["sbml"],
+  "application/scvp-cv-request": ["scq"],
+  "application/scvp-cv-response": ["scs"],
+  "application/scvp-vp-request": ["spq"],
+  "application/scvp-vp-response": ["spp"],
+  "application/sdp": ["sdp"],
+  "application/senml+xml": ["senmlx"],
+  "application/sensml+xml": ["sensmlx"],
+  "application/set-payment-initiation": ["setpay"],
+  "application/set-registration-initiation": ["setreg"],
+  "application/shf+xml": ["shf"],
+  "application/sieve": ["siv", "sieve"],
+  "application/smil+xml": ["smi", "smil"],
+  "application/sparql-query": ["rq"],
+  "application/sparql-results+xml": ["srx"],
+  "application/sql": ["sql"],
+  "application/srgs": ["gram"],
+  "application/srgs+xml": ["grxml"],
+  "application/sru+xml": ["sru"],
+  "application/ssdl+xml": ["ssdl"],
+  "application/ssml+xml": ["ssml"],
+  "application/swid+xml": ["swidtag"],
+  "application/tei+xml": ["tei", "teicorpus"],
+  "application/thraud+xml": ["tfi"],
+  "application/timestamped-data": ["tsd"],
+  "application/toml": ["toml"],
+  "application/trig": ["trig"],
+  "application/ttml+xml": ["ttml"],
+  "application/ubjson": ["ubj"],
+  "application/urc-ressheet+xml": ["rsheet"],
+  "application/urc-targetdesc+xml": ["td"],
+  "application/voicexml+xml": ["vxml"],
+  "application/wasm": ["wasm"],
+  "application/watcherinfo+xml": ["wif"],
+  "application/widget": ["wgt"],
+  "application/winhlp": ["hlp"],
+  "application/wsdl+xml": ["wsdl"],
+  "application/wspolicy+xml": ["wspolicy"],
+  "application/xaml+xml": ["xaml"],
+  "application/xcap-att+xml": ["xav"],
+  "application/xcap-caps+xml": ["xca"],
+  "application/xcap-diff+xml": ["xdf"],
+  "application/xcap-el+xml": ["xel"],
+  "application/xcap-ns+xml": ["xns"],
+  "application/xenc+xml": ["xenc"],
+  "application/xfdf": ["xfdf"],
+  "application/xhtml+xml": ["xhtml", "xht"],
+  "application/xliff+xml": ["xlf"],
+  "application/xml": ["xml", "xsl", "xsd", "rng"],
+  "application/xml-dtd": ["dtd"],
+  "application/xop+xml": ["xop"],
+  "application/xproc+xml": ["xpl"],
+  "application/xslt+xml": ["*xsl", "xslt"],
+  "application/xspf+xml": ["xspf"],
+  "application/xv+xml": ["mxml", "xhvml", "xvml", "xvm"],
+  "application/yang": ["yang"],
+  "application/yin+xml": ["yin"],
+  "application/zip": ["zip"],
+  "application/zip+dotlottie": ["lottie"],
+  "audio/3gpp": ["*3gpp"],
+  "audio/aac": ["adts", "aac"],
+  "audio/adpcm": ["adp"],
+  "audio/amr": ["amr"],
+  "audio/basic": ["au", "snd"],
+  "audio/midi": ["mid", "midi", "kar", "rmi"],
+  "audio/mobile-xmf": ["mxmf"],
+  "audio/mp3": ["*mp3"],
+  "audio/mp4": ["m4a", "mp4a", "m4b"],
+  "audio/mpeg": ["mpga", "mp2", "mp2a", "mp3", "m2a", "m3a"],
+  "audio/ogg": ["oga", "ogg", "spx", "opus"],
+  "audio/s3m": ["s3m"],
+  "audio/silk": ["sil"],
+  "audio/wav": ["wav"],
+  "audio/wave": ["*wav"],
+  "audio/webm": ["weba"],
+  "audio/xm": ["xm"],
+  "font/collection": ["ttc"],
+  "font/otf": ["otf"],
+  "font/ttf": ["ttf"],
+  "font/woff": ["woff"],
+  "font/woff2": ["woff2"],
+  "image/aces": ["exr"],
+  "image/apng": ["apng"],
+  "image/avci": ["avci"],
+  "image/avcs": ["avcs"],
+  "image/avif": ["avif"],
+  "image/bmp": ["bmp", "dib"],
+  "image/cgm": ["cgm"],
+  "image/dicom-rle": ["drle"],
+  "image/dpx": ["dpx"],
+  "image/emf": ["emf"],
+  "image/fits": ["fits"],
+  "image/g3fax": ["g3"],
+  "image/gif": ["gif"],
+  "image/heic": ["heic"],
+  "image/heic-sequence": ["heics"],
+  "image/heif": ["heif"],
+  "image/heif-sequence": ["heifs"],
+  "image/hej2k": ["hej2"],
+  "image/ief": ["ief"],
+  "image/jaii": ["jaii"],
+  "image/jais": ["jais"],
+  "image/jls": ["jls"],
+  "image/jp2": ["jp2", "jpg2"],
+  "image/jpeg": ["jpg", "jpeg", "jpe"],
+  "image/jph": ["jph"],
+  "image/jphc": ["jhc"],
+  "image/jpm": ["jpm", "jpgm"],
+  "image/jpx": ["jpx", "jpf"],
+  "image/jxl": ["jxl"],
+  "image/jxr": ["jxr"],
+  "image/jxra": ["jxra"],
+  "image/jxrs": ["jxrs"],
+  "image/jxs": ["jxs"],
+  "image/jxsc": ["jxsc"],
+  "image/jxsi": ["jxsi"],
+  "image/jxss": ["jxss"],
+  "image/ktx": ["ktx"],
+  "image/ktx2": ["ktx2"],
+  "image/pjpeg": ["jfif"],
+  "image/png": ["png"],
+  "image/sgi": ["sgi"],
+  "image/svg+xml": ["svg", "svgz"],
+  "image/t38": ["t38"],
+  "image/tiff": ["tif", "tiff"],
+  "image/tiff-fx": ["tfx"],
+  "image/webp": ["webp"],
+  "image/wmf": ["wmf"],
+  "message/disposition-notification": ["disposition-notification"],
+  "message/global": ["u8msg"],
+  "message/global-delivery-status": ["u8dsn"],
+  "message/global-disposition-notification": ["u8mdn"],
+  "message/global-headers": ["u8hdr"],
+  "message/rfc822": ["eml", "mime", "mht", "mhtml"],
+  "model/3mf": ["3mf"],
+  "model/gltf+json": ["gltf"],
+  "model/gltf-binary": ["glb"],
+  "model/iges": ["igs", "iges"],
+  "model/jt": ["jt"],
+  "model/mesh": ["msh", "mesh", "silo"],
+  "model/mtl": ["mtl"],
+  "model/obj": ["obj"],
+  "model/prc": ["prc"],
+  "model/step": ["step", "stp", "stpnc", "p21", "210"],
+  "model/step+xml": ["stpx"],
+  "model/step+zip": ["stpz"],
+  "model/step-xml+zip": ["stpxz"],
+  "model/stl": ["stl"],
+  "model/u3d": ["u3d"],
+  "model/vrml": ["wrl", "vrml"],
+  "model/x3d+binary": ["*x3db", "x3dbz"],
+  "model/x3d+fastinfoset": ["x3db"],
+  "model/x3d+vrml": ["*x3dv", "x3dvz"],
+  "model/x3d+xml": ["x3d", "x3dz"],
+  "model/x3d-vrml": ["x3dv"],
+  "text/cache-manifest": ["appcache", "manifest"],
+  "text/calendar": ["ics", "ifb"],
+  "text/coffeescript": ["coffee", "litcoffee"],
+  "text/css": ["css"],
+  "text/csv": ["csv"],
+  "text/html": ["html", "htm", "shtml"],
+  "text/jade": ["jade"],
+  "text/javascript": ["js", "mjs"],
+  "text/jsx": ["jsx"],
+  "text/less": ["less"],
+  "text/markdown": ["md", "markdown"],
+  "text/mathml": ["mml"],
+  "text/mdx": ["mdx"],
+  "text/n3": ["n3"],
+  "text/plain": ["txt", "text", "conf", "def", "list", "log", "in", "ini"],
+  "text/richtext": ["rtx"],
+  "text/rtf": ["*rtf"],
+  "text/sgml": ["sgml", "sgm"],
+  "text/shex": ["shex"],
+  "text/slim": ["slim", "slm"],
+  "text/spdx": ["spdx"],
+  "text/stylus": ["stylus", "styl"],
+  "text/tab-separated-values": ["tsv"],
+  "text/troff": ["t", "tr", "roff", "man", "me", "ms"],
+  "text/turtle": ["ttl"],
+  "text/uri-list": ["uri", "uris", "urls"],
+  "text/vcard": ["vcard"],
+  "text/vtt": ["vtt"],
+  "text/wgsl": ["wgsl"],
+  "text/xml": ["*xml"],
+  "text/yaml": ["yaml", "yml"],
+  "video/3gpp": ["3gp", "3gpp"],
+  "video/3gpp2": ["3g2"],
+  "video/h261": ["h261"],
+  "video/h263": ["h263"],
+  "video/h264": ["h264"],
+  "video/iso.segment": ["m4s"],
+  "video/jpeg": ["jpgv"],
+  "video/jpm": ["*jpm", "*jpgm"],
+  "video/mj2": ["mj2", "mjp2"],
+  "video/mp2t": ["ts", "m2t", "m2ts", "mts"],
+  "video/mp4": ["mp4", "mp4v", "mpg4"],
+  "video/mpeg": ["mpeg", "mpg", "mpe", "m1v", "m2v"],
+  "video/ogg": ["ogv"],
+  "video/quicktime": ["qt", "mov"],
+  "video/webm": ["webm"],
 };
 Object.freeze(mime);
 export default mime;
@@ -519,12 +520,12 @@ export class SC {
     return true;
   }
   /** Checks if one ore more data are equal */
-  static equals<T>(a:T, ...bs:T[]): boolean {
-    for (const b of bs) if (SC.equal(a,b)) return true;
+  static equals<T>(a: T, ...bs: T[]): boolean {
+    for (const b of bs) if (SC.equal(a, b)) return true;
     return false;
   }
   /** Pushes children into array but only the uniques */
-  static unique<T>(des:T[], ...args:T[][]) {
+  static unique<T>(des: T[], ...args: T[][]) {
     for (const arg of args) {
       for (const val of arg) {
         // Check if argument value is unique compared to destination
@@ -542,7 +543,7 @@ export class SC {
     }
   }
   /** Pushes children into array but only the uniques including reference */
-  static unique_ref<T>(des:T[], ...args:T[][]) {
+  static unique_ref<T>(des: T[], ...args: T[][]) {
     for (const arg of args) {
       for (const val of arg) {
         // Check if argument value is unique compared to destination
@@ -560,7 +561,7 @@ export class SC {
     }
   }
   /** Replaces object's content without changing reference */
-  static replace(dest:object, from:object) {
+  static replace(dest: object, from: object) {
     const tmp = dest as unknown as objstr;
     for (const key in tmp) {
       if (Object.prototype.hasOwnProperty.call(tmp, key)) {
@@ -571,7 +572,7 @@ export class SC {
     return tmp;
   }
   /** Generates Server-side's client reference: (...$$) => f($$[index]) */
-  static swc_clientrefer(index:number):swct.MemberExpression {
+  static swc_clientrefer(index: number): swct.MemberExpression {
     return {
       type: "MemberExpression",
       span: { start: 0, end: 0, ctxt: 0 },
@@ -587,13 +588,13 @@ export class SC {
         expression: {
           type: "NumericLiteral",
           span: { start: 0, end: 0, ctxt: 0 },
-          value: index
+          value: index,
         },
       },
     };
   }
   /** Generates Client-side's server reference: $call[index] */
-  static swc_serverrefer(call:number, index:number):swct.MemberExpression {
+  static swc_serverrefer(call: number, index: number): swct.MemberExpression {
     return {
       type: "MemberExpression",
       span: { start: 0, end: 0, ctxt: 0 },
@@ -615,7 +616,11 @@ export class SC {
     };
   }
   /** Generates Client-side's server call: const $no = await $$$(id, ...args) */
-  static swc_servercall(no:number, id:number, args:swct.Argument[]):swct.VariableDeclaration { // TODO, no parse
+  static swc_servercall(
+    no: number,
+    id: number,
+    args: swct.Argument[],
+  ): swct.VariableDeclaration { // TODO, no parse
     const line = swc.parse(
       `const $${no} = await $$$(${id})`,
       { syntax: "ecmascript", target: "es2022" },
@@ -626,7 +631,7 @@ export class SC {
     return line;
   }
   /** Generates Server-side code *(Client-side doesnt have an equivelent cause provided funciton is by default client-side)* */
-  static swc_server(args:swct.ExprOrSpread[]):string {
+  static swc_server(args: swct.ExprOrSpread[]): string {
     return swc.print({
       type: "Module",
       span: { start: 0, end: 0, ctxt: 0 },
@@ -720,9 +725,12 @@ export class State<T extends objstr = objstr> {
     return Object.assign(new State<T>(data), data) as state_type<T>;
   }
   /** Gets state record from Dalx State Records */
-  static get<T extends objstr>(state_id:State<T>|state_record<T>):state_record<T> {
+  static get<T extends objstr>(
+    state_id: State<T> | state_record<T>,
+  ): state_record<T> {
     if (!(state_id instanceof State)) return state_id;
-    const state = (Dalx.states.filter((x) =>
+    const state =
+      (Dalx.states.filter((x) =>
         x.id == state_id
       ) as (state_record<T> | undefined)[])[0];
     if (state === undefined) throw new Error("State not found");
@@ -733,7 +741,7 @@ export class State<T extends objstr = objstr> {
  * > To be only used to parse function like spliting a dual-sided function into client/server sided functions
  */
 export class Scope {
-  constructor(from: Scope | null = null, init:boolean = false) {
+  constructor(from: Scope | null = null, init: boolean = false) {
     if (from != null) {
       const keys = Object.keys(from) as (keyof Scope)[];
       for (const key of keys) this.copy(key, from[key]);
@@ -746,11 +754,11 @@ export class Scope {
   /* ----- Main Properties ----- */
   /** Function currently in scope of *(Is always referenced not cloned!)* */
   func?: swct.ArrowFunctionExpression;
-  /** Namespace backend? 
-    * - `true` - yes and is backend
-    * - `false` - no and is frontend
-    * - `null` - no but undetermined so possibly frontend/backend
-    */
+  /** Namespace backend?
+   * - `true` - yes and is backend
+   * - `false` - no and is frontend
+   * - `null` - no but undetermined so possibly frontend/backend
+   */
   namespace: { [name: string]: boolean | null } = {};
   /** Scope is within itself? */
   in: boolean | null = null;
@@ -776,19 +784,19 @@ export class Scope {
         : value;
   }
   /** Inserts new values to a scope's value while elliminating duplicating and recording references */
-  insert(values:scope_value[]|swc_node, back:boolean = false) {
+  insert(values: scope_value[] | swc_node, back: boolean = false) {
     if (!Array.isArray(values)) {
       values = [{
         node: structuredClone(values),
         back: back,
-        refs: [values]
-      } as scope_value]
+        refs: [values],
+      } as scope_value];
     }
     for (const value of values) {
       let pass = false;
       /** Insert to pre-existing values */
       for (const pvalue of this.values) {
-        if (SC.equal(value.node, pvalue.node)){
+        if (SC.equal(value.node, pvalue.node)) {
           SC.unique(value.refs, pvalue.refs);
           pass = true;
           break;
@@ -797,10 +805,12 @@ export class Scope {
       /** Insert has its own new entry */
       if (!pass) this.values.push(value);
     }
-  } 
+  }
   /** Replaces an instance of a value with new value */
-  replace(valA:swc_node, valB:swc_node) {
-    const xvalA = Object.entries(this.values).filter(x=>x[1].refs.includes(valA))[0]??null;
+  replace(valA: swc_node, valB: swc_node) {
+    const xvalA =
+      Object.entries(this.values).filter((x) => x[1].refs.includes(valA))[0] ??
+        null;
     if (xvalA != null) {
       /** Remove valA */
       const back = xvalA[1].back;
@@ -809,8 +819,10 @@ export class Scope {
       } else {
         xvalA[1].refs.splice(xvalA[1].refs.indexOf(valA), 1);
       }
-      
-      const xvalB = Object.entries(this.values).filter(x=>SC.equal(x[1].node, valB))[0]??null;
+
+      const xvalB = Object.entries(this.values).filter((x) =>
+        SC.equal(x[1].node, valB)
+      )[0] ?? null;
 
       /** Insert valB */
       if (xvalB != null) {
@@ -821,13 +833,13 @@ export class Scope {
     }
   }
   /** Inserts a new backend dependencies reference */
-  backref(node:swc_node) {
+  backref(node: swc_node) {
     SC.unique_ref(this.backs, [node]);
   }
   /** Applys the unique backs and values */
-  apply(...scopes:Scope[]) {
-    SC.unique_ref(this.backs, ...scopes.map(x=>x.backs));
-    this.insert(scopes.map(x=>x.values).flat());
+  apply(...scopes: Scope[]) {
+    SC.unique_ref(this.backs, ...scopes.map((x) => x.backs));
+    this.insert(scopes.map((x) => x.values).flat());
   }
 }
 
@@ -972,25 +984,37 @@ export class Dalx {
       /** Generate backend (server-sided code) */
       const gen_back = (
         /** Starting line Number where server-side starts (Line request will be inserted) */
-        sn:number
+        sn: number,
       ) => {
         f.async = true;
         state.hasback = true;
         /** Arugments of new function */
-        const args = scope.values.filter(x => !x.back);
+        const args = scope.values.filter((x) => !x.back);
         /** Replaces all client values with client-sided call */
-        args.forEach((x,n) => {
-          x.refs.forEach(y => SC.replace(y, SC.swc_clientrefer(n)));
+        args.forEach((x, n) => {
+          x.refs.forEach((y) => SC.replace(y, SC.swc_clientrefer(n)));
         });
         /** Duplicate of backend cause the current back will be its client-side equivelent */
         const backs = structuredClone(scope.backs);
         /** Replace all server dependencies with server-sided call */
-        scope.backs.map((x,n) => SC.replace(x, SC.swc_serverrefer(scope.noback, n)));
+        scope.backs.map((x, n) =>
+          SC.replace(x, SC.swc_serverrefer(scope.noback, n))
+        );
         /** Insert server call */
-        lines.splice(sn, 0, SC.swc_servercall(scope.noback++, state.server.length, args.map(x=>({expression: x.node} as swct.Argument))));
+        lines.splice(
+          sn,
+          0,
+          SC.swc_servercall(
+            scope.noback++,
+            state.server.length,
+            args.map((x) => ({ expression: x.node } as swct.Argument)),
+          ),
+        );
         /** Generate Server-sided code */
         state.server.push(
-          SC.swc_server(backs.map((x) => ({ expression: x } as swct.ExprOrSpread)))
+          SC.swc_server(
+            backs.map((x) => ({ expression: x } as swct.ExprOrSpread)),
+          ),
         );
         /** Reset scope backend tracking */
         scope.backs = [];
@@ -1009,16 +1033,21 @@ export class Dalx {
         /** Check if server-side started */
         if (sno == -1 && scope.backs.length) sno = n;
         /** Check if server-side endded */
-        if (sno != -1 && (!scope.backs.length || scope.in == true || n+1 == lines.length)) {
+        if (
+          sno != -1 &&
+          (!scope.backs.length || scope.in == true || n + 1 == lines.length)
+        ) {
           gen_back(sno);
           n++;
           sno = -1;
         }
         /** Delete line if not used *(Just references server response with no use)* */
-        if (line.type == "ExpressionStatement" &&
+        if (
+          line.type == "ExpressionStatement" &&
           line.expression.type == "MemberExpression" &&
           line.expression.object.type == "Identifier" &&
-          /^\$\d+$/.test(line.expression.object.value)) {
+          /^\$\d+$/.test(line.expression.object.value)
+        ) {
           lines.splice(n, 1);
           n--;
         }
@@ -1035,13 +1064,12 @@ export class Dalx {
       if (typeof node == "function") {
         state.funcs.push({
           id: node as embedded_function<T, A>,
-          name: Object.keys(state.ctx).filter((x) =>
-              state.ctx[x] == node
-            )[0] ?? "",
+          name: Object.keys(state.ctx).filter((x) => state.ctx[x] == node)[0] ??
+            "",
           front: code,
-          args: f.params.length
+          args: f.params.length,
         });
-      };
+      }
       /** TODO! Remove, cause this is only for debugging *
       console.log(
         "\x1b[1;32mFRONTEND:\x1b[0m\n" +
@@ -1096,12 +1124,14 @@ export class Dalx {
     else if (node.type == "ExpressionStatement") {
       Dalx.parse(state, node.expression, scope);
     } // a ? b : c
-    else if (node.type == 'ConditionalExpression') {
-      const res = [node.test, node.consequent, node.alternate].map(x => Dalx.parse(state, x, new Scope(scope, true)));
-      scope.in = res.every(x=>x.in!=false);
+    else if (node.type == "ConditionalExpression") {
+      const res = [node.test, node.consequent, node.alternate].map((x) =>
+        Dalx.parse(state, x, new Scope(scope, true))
+      );
+      scope.in = res.every((x) => x.in != false);
       scope.apply(...res);
     } // Return data
-    else if (node.type == 'ReturnStatement') {
+    else if (node.type == "ReturnStatement") {
       Dalx.parse(state, node.argument, scope);
       scope.in = true; // Cannot return to server cause function is client-sided
     } // a = b
@@ -1119,11 +1149,13 @@ export class Dalx {
     else if (node.type == "MemberExpression") {
       Dalx.parse(state, node.object, scope);
       // Collapse State Environment
-      if (scope.in && node.object.type == 'Identifier' && node.object.value == 'window' && node.property.type == "Identifier") {
+      if (
+        scope.in && node.object.type == "Identifier" &&
+        node.object.value == "window" && node.property.type == "Identifier"
+      ) {
         scope.replace(node.object, node.property);
         SC.replace(node, node.property);
-      }
-      // Replace "a" with "a.b" in values
+      } // Replace "a" with "a.b" in values
       else scope.replace(node.object, node);
     } // a o b
     else if (node.type == "BinaryExpression") {
@@ -1136,7 +1168,11 @@ export class Dalx {
         scope.replace(node.right, node);
       }
       // Set scope
-      scope.in = res[0].in == null ? res[1].in : res[1].in == null ? res[0].in : res[0].in && res[1].in;
+      scope.in = res[0].in == null
+        ? res[1].in
+        : res[1].in == null
+        ? res[0].in
+        : res[0].in && res[1].in;
       scope.apply(...res);
     } // a(b)
     else if (node.type == "CallExpression") {
@@ -1155,10 +1191,20 @@ export class Dalx {
     } // var
     else if (node.type == "Identifier") {
       /** Shared identifiers between server and client side */
-      const shared = ['Number','String','Boolean','Object','Function','Math'];
-      scope.in = shared.includes(node.value) ? null : (Object.keys(scope.namespace).filter((x) =>
-        x == node.value
-      ).map((x) => scope.namespace[x] == null ? null : !scope.namespace[x])[0] ?? false);
+      const shared = [
+        "Number",
+        "String",
+        "Boolean",
+        "Object",
+        "Function",
+        "Math",
+      ];
+      scope.in = shared.includes(node.value)
+        ? null
+        : (Object.keys(scope.namespace).filter((x) => x == node.value).map((
+          x,
+        ) => scope.namespace[x] == null ? null : !scope.namespace[x])[0] ??
+          false);
       if (scope.state == node.value) {
         node.value = "window";
       }
@@ -1244,10 +1290,10 @@ export class Dalx {
   }
   static exit() {
     Dalx.active = false;
-    Dalx.run_stack.request('');
+    Dalx.run_stack.request("");
     Deno.exit(0);
   }
-  static active:boolean = true;
+  static active: boolean = true;
   /** Main run - Allows to pass scope to modified function */
   static async run(loop: (code: string) => unknown[]) {
     while (this.active) {
@@ -1336,7 +1382,7 @@ export class Route extends Dalx {
   override content(req: Request | null = null): unknown {
     if (req && new URL(req.url).pathname == this.path) {
       let type = "application/octet-stream";
-      const ext = this.path.slice(this.path.lastIndexOf('.')+1).toLowerCase();
+      const ext = this.path.slice(this.path.lastIndexOf(".") + 1).toLowerCase();
       for (const key in mime) {
         if (mime[key].includes(ext)) {
           type = key;
@@ -1452,7 +1498,10 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
         this.state
       ) {
         const body = await req.json() as [number, ...unknown[]];
-        if (body.length < 0 && typeof body[0] != "number" || body[0] < 0 || body[0] >= this.state.server.length) {
+        if (
+          body.length < 0 && typeof body[0] != "number" || body[0] < 0 ||
+          body[0] >= this.state.server.length
+        ) {
           return new Response("[]", {
             status: 400,
             headers: { "Content-Type": "application/json" },
@@ -1480,8 +1529,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     await this.render(null, this);
 
     /* Set a unique console title and then find it to hide (SW_HIDE = 0) */
-    await wcws.setCurrentConsoleWindowTitleIncludingDelay('DenoWebviewApp');
-    wcws.findNamedConsoleWindowAndSetWindowState('DenoWebviewApp', 0);
+    await wcws.setCurrentConsoleWindowTitleIncludingDelay("DenoWebviewApp");
+    wcws.findNamedConsoleWindowAndSetWindowState("DenoWebviewApp", 0);
 
     /* Create window */
     const view = new Webview();
