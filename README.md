@@ -10,6 +10,9 @@ What makes Dalx unique compared to the alternatives are:
 - **Singular Codebase** - No need to use multiple programming languages like HTML,CSS,JS,SQL,etc. when creating applications because Dalx provides built-in native-like features like `Data` class when dealing with databases, and IntrinsicElement to deal with HTML and more custom elements
 
 ## Versions
+### 0.1.2
+- Fixed Dalx `init()` intializer to support both async or not overrides
+- Fixed App constructor
 ### 0.1.1
 - No need to use `{...array}` to apply contents of array inside JSX, now `{array}` will do
   ```tsx

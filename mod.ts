@@ -862,7 +862,8 @@ export class Dalx<A extends objstr = objstr, C extends unknown = unknown> {
   /** Children of Element */
   children: C[];
   /** Intialized function to be overridden */
-  async init() { }
+  //init:()=>void|Promise<void> = () => { };
+  init():void|Promise<void> { }
 
   /* ----- JSX Processing ----- */
   /** JSX Factory */
@@ -874,7 +875,7 @@ export class Dalx<A extends objstr = objstr, C extends unknown = unknown> {
     if (typeof tag === "string" || typeof tag === "number") {
       return new HTMLElement(String(tag), attr ?? {}, children) as Dalx<A,C>;
     }
-    return new (tag as new (attr:A, children:C[]) => Dalx<A,C>)(attr, children);
+    return new (tag as new (attr:A, children:C[]) => Dalx<A,C>)(attr ?? {}, children);
   }
   /** Content of element to be compiled */
   content<A extends objstr = objstr, C extends unknown = unknown>(_req: Request | null, _parent: Dalx<A,C>): unknown {
@@ -888,7 +889,7 @@ export class Dalx<A extends objstr = objstr, C extends unknown = unknown> {
     parent: Dalx = this,
   ): Promise<string | Response> {
     const content = await this.content(req, parent);
-    const render = async (data:unknown) => {
+    async function render(data:unknown) {
       let out = "";
       for (let dat of (Array.isArray(data) ? data : [data])) {
         while (Array.isArray(dat)) dat = await render(dat);
@@ -899,7 +900,7 @@ export class Dalx<A extends objstr = objstr, C extends unknown = unknown> {
         else throw new Error('Unknown type: ', dat);
       }
       return out;
-    };
+    }
     return render(content);
   }
 
@@ -1402,23 +1403,24 @@ export class Route extends Dalx<{
     return [];
   }
 }
+type AppAttr<T extends objstr> = {
+    /** Name/Title of Application */
+    name?: string;
+    /** Host application to hostname and port */
+    host?: string | boolean | null;
+    /** State of client's browser */
+    state?: State<T>;
+    /** Desktop Window by `width,height,x,y` */
+    desk?: number[] | boolean;
+    /** Starting function before request */
+    start?: (req: Request) => void;
+    /** Style of website */
+    style?: string;
+    /** TailWindCss Style */
+    twc?: string | boolean;
+  };
 /** Main App */
-export class App<T extends objstr = objstr> extends Dalx<{
-      /** Name/Title of Application */
-      name?: string;
-      /** Host application to hostname and port */
-      host?: string | boolean | null;
-      /** State of client's browser */
-      state?: State<T>;
-      /** Desktop Window by `width,height,x,y` */
-      desk?: number[] | boolean;
-      /** Starting function before request */
-      start?: (req: Request) => void;
-      /** Style of website */
-      style?: string;
-      /** TailWindCss Style */
-      twc?: string | boolean;
-    }, unknown> {
+export class App<T extends objstr = objstr> extends Dalx<AppAttr<T>> {
 
   /** Name of Application */
   name:string = "Untitled";
@@ -1426,28 +1428,31 @@ export class App<T extends objstr = objstr> extends Dalx<{
   server: Deno.HttpServer | null = null;
   /** State of Application (Client Side) */
   state: state_record<T> | null = null;
-  override async init() {
-    const attr = this.attr;
+
+  constructor(attr: AppAttr<T>, children:unknown[]) {
+    super(attr, children);
     this.name = attr.name ?? this.name;
     this.state = State.get(attr.state ?? new State());
-    
-    /** Fix this rendering problem! */
-    await this.render(null, this);
-    /** Hosting */
-    if ("host" in attr) {
-      if (typeof attr.host == "string") {
-        this.host(
-          Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
-          !Number.isNaN(Number(attr.host))
-            ? Number(attr.host)
-            : !Number.isNaN(Number(attr.host.split(":")[1]))
-            ? Number(attr.host.split(":")[1])
-            : 80,
-        );
-      } else this.host();
-    }
-    /** Desktop Application */
-    if ("desk" in attr) this.desk();
+    (async () => {
+      const attr = this.attr;
+      /** Fix this rendering problem! */
+      await this.render(null, this);
+      /** Hosting */
+      if ("host" in attr) {
+        if (typeof attr.host == "string") {
+          this.host(
+            Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
+            !Number.isNaN(Number(attr.host))
+              ? Number(attr.host)
+              : !Number.isNaN(Number(attr.host.split(":")[1]))
+              ? Number(attr.host.split(":")[1])
+              : 80,
+          );
+        } else this.host();
+      }
+      /** Desktop Application */
+      if ("desk" in attr) this.desk();
+    })();
   }
   override content(_req: Request | null = null): unknown {
     const code = this.state != null ? Dalx.state_code(this.state) : "";
