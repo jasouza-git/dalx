@@ -1447,31 +1447,41 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     this.addon = (attr.addon??'').split(',').filter(x=>x.length);
     this.style = attr.style??'';
 
-    if ("auto" in attr) this.host();
-    if ("host" in attr) {
-      if (typeof attr.host == "string") {
-        this.host(
-          Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
-          !Number.isNaN(Number(attr.host))
-            ? Number(attr.host)
-            : !Number.isNaN(Number(attr.host.split(":")[1]))
-            ? Number(attr.host.split(":")[1])
-            : 80,
-        );
-      } else this.host();
-    }
-    if ("desk" in attr) {
-      this.desk();
-    }
+    /** Starting */
+    (async () => {
+      /** Fix this rendering problem! */
+      await this.render(null, this);
+      /** Hosting */
+      if ("host" in attr) {
+        if (typeof attr.host == "string") {
+          this.host(
+            Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
+            !Number.isNaN(Number(attr.host))
+              ? Number(attr.host)
+              : !Number.isNaN(Number(attr.host.split(":")[1]))
+              ? Number(attr.host.split(":")[1])
+              : 80,
+          );
+        } else this.host();
+      }
+      /** Desktop Application */
+      if ("desk" in attr) {
+        this.desk();
+      }
+    })()
   }
   override content(_req: Request | null = null): unknown {
     const code = this.state != null ? Dalx.state_code(this.state) : "";
     return [
+      /** HTML Head */
       `<!DOCTYPE html><html><head><title>${this.name}</title><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>${
+        /** Addons */
         this.addon.map(x => ({
           twc: '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>',
         }[x]??'')).join('')
+        /** Styling */
       }${this.style.length?`<style>${this.style}</style>`:''}</head><body>`,
+      /** Children Pass */
       ...this.children,
       ...((this.state != null
         ? [
@@ -1538,9 +1548,6 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     await this.server.finished;
   }
   async desk() {
-    /** Fix this rendering problem! */
-    await this.render(null, this);
-
     /* Set a unique console title and then find it to hide (SW_HIDE = 0) */
     await wcws.setCurrentConsoleWindowTitleIncludingDelay("DenoWebviewApp");
     wcws.findNamedConsoleWindowAndSetWindowState("DenoWebviewApp", 0);
