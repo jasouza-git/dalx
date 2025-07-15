@@ -1,3 +1,4 @@
+#!/usr/bin/env -S deno test --unstable-raw-imports --allow-read
 /** # Dalx
  * **Dalx** *(dal-eks)* - Deno-based Application Library eXtension
  * - `Deno-based` **Platform** - Built exclusively for the Deno runtime, leveraging its native TypeScript support, secure execution model, and modern tooling
@@ -494,6 +495,7 @@ export default mime;
 declare global {
   namespace JSX {
     interface IntrinsicElements {
+      // @ts-ignore Says duplicate error but all is good
       [tag: string]: unknown;
     }
   }
@@ -1424,6 +1426,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       desk?: number[] | boolean;
       /** Starting function before request */
       start?: (req: Request) => void;
+      /** Addons to the website */
+      addon?: string[];
     },
     children: unknown[],
   ) {
@@ -1438,6 +1442,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       : arg_state;
     if (state === undefined) throw new Error("State not found");
     this.state = state;
+    this.addon = attr.addon ?? [];
 
     if ("auto" in attr) this.host();
     if ("host" in attr) {
@@ -1459,7 +1464,11 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
   override content(_req: Request | null = null): unknown {
     const code = this.state != null ? Dalx.state_code(this.state) : "";
     return [
-      `<!DOCTYPE html><html><head><title>${this.name}</title></head><body>`,
+      `<!DOCTYPE html><html><head><title>${this.name}</title><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>${
+        this.addon.map(x => ({
+          twc: '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>',
+        }[x]??'')).join('')
+      }</head><body>`,
       ...this.children,
       ...((this.state != null
         ? [
@@ -1547,6 +1556,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
   server: Deno.HttpServer | null = null;
   /** State of Application (Client Side) */
   state: state_record<T> | null = null;
+  /** Addons */
+  addon: string[];
 }
 
 /* ----- TESTING ----- */
@@ -1563,5 +1574,21 @@ Deno.test("State function parsing", () => {
     // Calling a pure server-side action
     server_function(y);
   }
-  Dalx.parse(state, dual_function);
+  const scope = Dalx.parse(state, dual_function);
+
+  console.log(
+    "\x1b[1;32mFRONTEND:\x1b[0m\n" +
+      scope.res +
+      "\n\n" +
+      "\x1b[1;32mBACKEND:\x1b[0m\n" +
+      State.get(state).server.join("\n").split("\n").map((x) => "  " + x).join(
+        "\n",
+      ),
+  );
 });
+Deno.test("App Code generation", async () => {
+  const app = new App({name:'title',addon:['twc']}, [
+    '<h1>Hello World</h1>'
+  ]);
+  console.log(await app.render());
+})
