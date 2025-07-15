@@ -1,17 +1,8 @@
 /** @jsx Dalx.jsx */
-import { Dalx, App, state_type, DOM } from 'https://raw.githubusercontent.com/jasouza-git/dalx/main/mod.ts';
+import { Dalx, App } from '../mod.ts';
 Dalx.run(x=>eval(x));
 
-const pass = 'secret';
-
-function login(c:state_type) {
-    const p = c.document.getElementById<DOM.HTMLInputElement>('pass')!;
-    c.document.getElementById('status')!.innerText = p.value == pass ? 'Correct password' : 'Wrong password';
-}
-
-<App desk>
-    <input id="pass" type="password" />
-    <button type="button" onclick={login}>Login</button>
-    <p id="status">Not logged in yet</p>
+const txt = [<h1>Hi</h1>, <h2>Hi2</h2>, <h3>Hi3</h3>];
+<App host>
+    {txt}
 </App>
-// #!/usr/bin/env -S deno run --unstable-raw-imports 

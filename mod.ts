@@ -42,7 +42,7 @@
  */
 import * as DOM from "./type.ts";
 import * as swc from "https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/main/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/refs/heads/master/mod.ts"; //"https://raw.githubusercontent.com/jasouza-git/ext_deno_swc/d7d78162d8bce8f330b43e0881cf8b39e926a11d/mod.ts"; //"./lib/swc/mod.ts";
-import * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
+import type * as swct from "https://esm.sh/@swc/core@1.2.212/types.d.ts";
 import * as wcws from "jsr:@svefro/win-console-window-state";
 import { Webview } from "https://raw.githubusercontent.com/jasouza-git/ext_webview_deno/main/mod.ts"; //"./lib/webview/mod.ts";
 export { DOM };
@@ -495,7 +495,6 @@ export default mime;
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      // @ts-ignore Says duplicate error but all is good
       [tag: string]: unknown;
     }
   }
@@ -848,34 +847,37 @@ export class Scope {
 
 /* ----- DALX Classes ----- */
 /** Main element class */
-export class Dalx {
+export class Dalx<A extends objstr = objstr, C extends unknown = unknown> {
   /* ----- Element related ----- */
   constructor(
-    attr: objstr = {},
-    children: unknown[] = [],
+    attr: A = {} as A,
+    children: C[] = [],
   ) {
     this.children = children;
     this.attr = attr;
+    this.init();
   }
   /** Attributes of element */
-  attr: objstr = {};
+  attr: A;
   /** Children of Element */
-  children: unknown[] = [];
+  children: C[];
+  /** Intialized function to be overridden */
+  async init() { }
 
   /* ----- JSX Processing ----- */
   /** JSX Factory */
-  static jsx(
-    tag: typeof Dalx | keyof JSX.IntrinsicElements,
-    attr: { [name: string]: unknown },
-    ...children: unknown[]
-  ): Dalx {
+  static jsx<A extends objstr, C, T extends Dalx<A,C> | (new (attr:A, children:C[]) => Dalx<A,C> | keyof JSX.IntrinsicElements)>(
+    tag: T,
+    attr: A,
+    ...children: C[]
+  ): Dalx<A,C> {
     if (typeof tag === "string" || typeof tag === "number") {
-      return new HTMLElement(String(tag), attr ?? {}, children);
+      return new HTMLElement(String(tag), attr ?? {}, children) as Dalx<A,C>;
     }
-    return new tag(attr, children);
+    return new (tag as new (attr:A, children:C[]) => Dalx<A,C>)(attr, children);
   }
   /** Content of element to be compiled */
-  content(_req: Request | null, _parent: Dalx): unknown {
+  content<A extends objstr = objstr, C extends unknown = unknown>(_req: Request | null, _parent: Dalx<A,C>): unknown {
     return this.children;
   }
   /** Compiles the whole element *(Dont Override)*
@@ -885,18 +887,20 @@ export class Dalx {
     req: Request | null = null,
     parent: Dalx = this,
   ): Promise<string | Response> {
-    let out = "";
     const content = await this.content(req, parent);
-    for (const cont of (Array.isArray(content) ? content : [content])) {
-      if (typeof cont == "string") out += cont;
-      else if (cont instanceof Response) return cont;
-      else if (cont instanceof Dalx) {
-        const rendered = await cont.render(req, parent);
-        if (typeof rendered == "string") out += rendered;
-        else return rendered;
+    const render = async (data:unknown) => {
+      let out = "";
+      for (let dat of (Array.isArray(data) ? data : [data])) {
+        while (Array.isArray(dat)) dat = await render(dat);
+        if (dat instanceof Dalx) dat = await dat.render(req, parent);
+
+        if (typeof dat == "string") out += dat;
+        else if (dat instanceof Response) return dat;
+        else throw new Error('Unknown type: ', dat);
       }
-    }
-    return out;
+      return out;
+    };
+    return render(content);
   }
 
   /* ----- State Processing ----- */
@@ -1330,16 +1334,17 @@ export class Dalx {
   };
 }
 /** HTML Element */
-export class HTMLElement extends Dalx {
+export class HTMLElement extends Dalx<objstr, unknown> {
   constructor(
     tag: string,
-    attr: { [name: string]: unknown },
+    attr: objstr,
     children: unknown[],
   ) {
     super(attr, children);
     this.tag = tag;
   }
-  override content(_req: unknown, parent: App): unknown {
+  override content<C extends Dalx = App>(_req: Request | null, parent: C): unknown {
+    const state = parent instanceof App ? parent.state : null;
     return [
       `<${
         // Element Tag
@@ -1347,10 +1352,10 @@ export class HTMLElement extends Dalx {
         // Element Attributes
         (Object.keys(this.attr).map((x) =>
           ` ${x}="${
-            typeof this.attr[x] != "function" || !parent.state
+            typeof this.attr[x] != "function" || !state
               ? String(this.attr[x])
               : Dalx.state_function(
-                parent.state,
+                state,
                 this.attr[x] as embedded_function,
               )
           }"`
@@ -1365,57 +1370,40 @@ export class HTMLElement extends Dalx {
   tag: string;
 }
 /** Route of a HTTP's request and its response */
-export class Route extends Dalx {
-  constructor(
-    attr: {
-      /** Path of data to route */
-      path: string;
-      /** Raw data to route */
-      data?: Uint8Array | string;
-      /** Mime type of response */
-      type?: string;
-    },
-    children: unknown[],
-  ) {
-    super(attr, children);
-    this.path = attr.path;
-    if (attr.data) this.data = attr.data;
-    if (attr.type) this.type = attr.type;
-  }
+export class Route extends Dalx<{
+    /** Path of data to route */
+    path: string;
+    /** Raw data to route */
+    data?: Uint8Array | string;
+    /** Mime type of response */
+    type?: string;
+  }, unknown> {
+
   override content(req: Request | null = null): unknown {
-    if (req && new URL(req.url).pathname == this.path) {
+    if (req && new URL(req.url).pathname == this.attr.path) {
       let type = "application/octet-stream";
-      const ext = this.path.slice(this.path.lastIndexOf(".") + 1).toLowerCase();
+      const ext = this.attr.path.slice(this.attr.path.lastIndexOf(".") + 1).toLowerCase();
       for (const key in mime) {
         if (mime[key].includes(ext)) {
           type = key;
           break;
         }
       }
-      return !this.data ? this.children : new Response(this.data, {
+      return !this.attr.data ? this.children : new Response(this.attr.data, {
         status: 200,
         headers: {
           "Content-Type": type,
-          "Content-Length": (typeof this.data == "string"
-            ? this.data.length
-            : this.data.byteLength).toString(),
+          "Content-Length": (typeof this.attr.data == "string"
+            ? this.attr.data.length
+            : this.attr.data.byteLength).toString(),
         },
       });
     }
     return [];
   }
-  /** Path to response */
-  path: string;
-  /** Data to response */
-  data: Uint8Array | string | null = null;
-  /** Mime type */
-  type: string = "text/html";
 }
 /** Main App */
-export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
-  extends Dalx {
-  constructor(
-    attr: {
+export class App<T extends objstr = objstr> extends Dalx<{
       /** Name/Title of Application */
       name?: string;
       /** Host application to hostname and port */
@@ -1426,61 +1414,55 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       desk?: number[] | boolean;
       /** Starting function before request */
       start?: (req: Request) => void;
-      /** Addons to the website seperated by commas */
-      addon?: string;
       /** Style of website */
       style?: string;
-    },
-    children: unknown[],
-  ) {
-    super(attr, children);
-    this.name = attr.name ?? "Untitled";
+      /** TailWindCss Style */
+      twc?: string | boolean;
+    }, unknown> {
 
-    const arg_state = attr.state ? attr.state : new State();
-    const state = arg_state instanceof State
-      ? (Dalx.states.filter((x) =>
-        x.id == arg_state
-      ) as (state_record<T> | undefined)[])[0]
-      : arg_state;
-    if (state === undefined) throw new Error("State not found");
-    this.state = state;
-    this.addon = (attr.addon??'').split(',').filter(x=>x.length);
-    this.style = attr.style??'';
-
-    /** Starting */
-    (async () => {
-      /** Fix this rendering problem! */
-      await this.render(null, this);
-      /** Hosting */
-      if ("host" in attr) {
-        if (typeof attr.host == "string") {
-          this.host(
-            Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
-            !Number.isNaN(Number(attr.host))
-              ? Number(attr.host)
-              : !Number.isNaN(Number(attr.host.split(":")[1]))
-              ? Number(attr.host.split(":")[1])
-              : 80,
-          );
-        } else this.host();
-      }
-      /** Desktop Application */
-      if ("desk" in attr) {
-        this.desk();
-      }
-    })()
+  /** Name of Application */
+  name:string = "Untitled";
+  /** Server of Application */
+  server: Deno.HttpServer | null = null;
+  /** State of Application (Client Side) */
+  state: state_record<T> | null = null;
+  override async init() {
+    const attr = this.attr;
+    this.name = attr.name ?? this.name;
+    this.state = State.get(attr.state ?? new State());
+    
+    /** Fix this rendering problem! */
+    await this.render(null, this);
+    /** Hosting */
+    if ("host" in attr) {
+      if (typeof attr.host == "string") {
+        this.host(
+          Number.isNaN(Number(attr.host)) ? attr.host.split(":")[0] : "0.0.0.0",
+          !Number.isNaN(Number(attr.host))
+            ? Number(attr.host)
+            : !Number.isNaN(Number(attr.host.split(":")[1]))
+            ? Number(attr.host.split(":")[1])
+            : 80,
+        );
+      } else this.host();
+    }
+    /** Desktop Application */
+    if ("desk" in attr) this.desk();
   }
   override content(_req: Request | null = null): unknown {
     const code = this.state != null ? Dalx.state_code(this.state) : "";
     return [
       /** HTML Head */
       `<!DOCTYPE html><html><head><title>${this.name}</title><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>${
-        /** Addons */
-        this.addon.map(x => ({
-          twc: '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>',
-        }[x]??'')).join('')
+        /** TailWindCss */
+        'twc' in this.attr ? (
+          '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>'
+          + (typeof this.attr.twc == 'string' && this.attr.twc.length ? 
+            '<style type="text/tailwindcss">'+this.attr.twc+'</style>'
+          : '')
+        ) : ''
         /** Styling */
-      }${this.style.length?`<style>${this.style}</style>`:''}</head><body>`,
+      }${this.attr.style?`<style>${this.attr.style}</style>`:''}</head><body>`,
       /** Children Pass */
       ...this.children,
       ...((this.state != null
@@ -1496,24 +1478,10 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
           "</script>",
         ]
         : []) as string[]),
-      /*...(Object.keys(this.state).length
-        ? [
-          /*
-          // @ts-ignore: JSON Stringify can deal with any type
-          `<script>${
-            Object.keys(this.state).map((y) =>
-              `${y}=${
-                typeof this.state[y] == "function"
-                  ? String(this.state[y])
-                  : JSON.stringify(this.state[y])
-              }`
-            ).join(",")
-          }</script>`,*
-        ]
-        : []),*/
       `</body></html>`,
     ];
   }
+  /** Hosts application to network */
   async host(host: string = "0.0.0.0", port: number = 80) {
     this.server = Deno.serve({ hostname: host, port }, async (req) => {
       if (
@@ -1547,6 +1515,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     });
     await this.server.finished;
   }
+  /** Opens a graphical window for desktop */
   async desk() {
     /* Set a unique console title and then find it to hide (SW_HIDE = 0) */
     await wcws.setCurrentConsoleWindowTitleIncludingDelay("DenoWebviewApp");
@@ -1560,16 +1529,6 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
     await view.run();
     Dalx.exit();
   }
-  /** Name of Application */
-  name: string;
-  /** Server of Application */
-  server: Deno.HttpServer | null = null;
-  /** State of Application (Client Side) */
-  state: state_record<T> | null = null;
-  /** Addons */
-  addon: string[];
-  /** Style */
-  style: string;
 }
 
 /* ----- TESTING ----- */
@@ -1599,7 +1558,7 @@ Deno.test("State function parsing", () => {
   );
 });
 Deno.test("App Code generation", async () => {
-  const app = new App({name:'title',addon:'twc'}, [
+  const app = new App({name:'title'}, [
     '<h1>Hello World</h1>'
   ]);
   console.log(await app.render());
