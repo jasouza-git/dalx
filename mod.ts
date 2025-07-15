@@ -1426,8 +1426,10 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       desk?: number[] | boolean;
       /** Starting function before request */
       start?: (req: Request) => void;
-      /** Addons to the website */
-      addon?: string[];
+      /** Addons to the website seperated by commas */
+      addon?: string;
+      /** Style of website */
+      style?: string;
     },
     children: unknown[],
   ) {
@@ -1442,7 +1444,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
       : arg_state;
     if (state === undefined) throw new Error("State not found");
     this.state = state;
-    this.addon = attr.addon ?? [];
+    this.addon = (attr.addon??'').split(',').filter(x=>x.length);
+    this.style = attr.style??'';
 
     if ("auto" in attr) this.host();
     if ("host" in attr) {
@@ -1468,7 +1471,7 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
         this.addon.map(x => ({
           twc: '<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>',
         }[x]??'')).join('')
-      }</head><body>`,
+      }${this.style.length?`<style>${this.style}</style>`:''}</head><body>`,
       ...this.children,
       ...((this.state != null
         ? [
@@ -1558,6 +1561,8 @@ export class App<T extends objstr = objstr, A extends unknown[] = unknown[]>
   state: state_record<T> | null = null;
   /** Addons */
   addon: string[];
+  /** Style */
+  style: string;
 }
 
 /* ----- TESTING ----- */
@@ -1587,7 +1592,7 @@ Deno.test("State function parsing", () => {
   );
 });
 Deno.test("App Code generation", async () => {
-  const app = new App({name:'title',addon:['twc']}, [
+  const app = new App({name:'title',addon:'twc'}, [
     '<h1>Hello World</h1>'
   ]);
   console.log(await app.render());
